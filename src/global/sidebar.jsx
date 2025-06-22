@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { tokens } from "../../theme";
 import { supabase } from "../../supabaseClient";
 import "./SideBar.css"; // Import the styles
+import logo from '../assets/react.svg'
 
 // Icons
 import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
@@ -100,7 +101,7 @@ const SideBar = ({isAdmin,userId}) => {
                 <img
                   alt="profile-user"
                   className="profile-image"
-                  src={`../../src/assets/react.svg`}
+                  src={logo}
                   style={{ cursor: "pointer" }}
                 />
               </Box>
