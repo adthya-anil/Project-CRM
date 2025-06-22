@@ -2,6 +2,7 @@ import { useState } from "react";
 import { supabase } from "../../../supabaseClient";
 import { useNavigate } from "react-router-dom";
 import "./SignIn.css";
+import logo from '../../assets/react.svg';
 
 
 function SignIn() {
@@ -74,7 +75,7 @@ function SignIn() {
             {/* Logo Container */}
             <div className="logo-container">
               
-              <img src={'../src/assets/react.svg'} alt="SafetyCatch Logo" className="brand-logo" />
+              <img src={logo} alt="SafetyCatch Logo" className="brand-logo" />
 
             </div>
             
