@@ -1,0 +1,387 @@
+/* Enhanced Dashboard Chart Styles */
+:root {
+  --dashboard-bg: #f2f2eb;
+  --dashboard-card-bg: #ffffff;
+  --dashboard-card-shadow: 0 4px 24px rgba(0,0,0,0.08);
+  --dashboard-card-radius: 18px;
+  --dashboard-title-color: #344E67;
+  --dashboard-text-color: #1b1b1b;
+  --dashboard-accent: #92C4DA;
+  --dashboard-success: #81c784;
+  --dashboard-error: #e57373;
+  --dashboard-muted: #6b7280;
+  --dashboard-border: #e5e7eb;
+}
+
+[data-theme="dark"] {
+  --dashboard-bg: #23272f;
+  --dashboard-card-bg: #344E67;
+  --dashboard-card-shadow: 0 4px 24px rgba(0,0,0,0.18);
+  --dashboard-title-color: #92C4DA;
+  --dashboard-text-color: #f2f2eb;
+  --dashboard-accent: #4caf50;
+  --dashboard-success: #4caf50;
+  --dashboard-error: #f44336;
+  --dashboard-muted: #9ca3af;
+  --dashboard-border: #374151;
+}
+
+.dashboard-root {
+  background: var(--dashboard-bg);
+  min-height: 100vh;
+  padding: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 24px;
+  margin-bottom: 32px;
+  width: 100%;
+}
+
+.dashboard-card:nth-child(1) { grid-column: 1; grid-row: 1; }
+.dashboard-card:nth-child(2) { grid-column: 2; grid-row: 1; }
+.dashboard-card:nth-child(3) { grid-column: 1; grid-row: 2; }
+.dashboard-card:nth-child(4) { grid-column: 2; grid-row: 2; }
+
+.dashboard-card {
+  background: var(--dashboard-card-bg);
+  box-shadow: var(--dashboard-card-shadow);
+  border-radius: var(--dashboard-card-radius);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+  height: 320px;
+  min-height: 320px;
+  border: 1px solid var(--dashboard-border);
+  overflow: hidden;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+}
+
+/* Chart Container Styles */
+.dashboard-chart {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+  max-height: 800px;
+  overflow: hidden;
+  position: relative;
+  border-radius: 8px;
+ 
+}
+
+.dashboard-chart > * {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Chart Controls Styling */
+.dashboard-chart-controls {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.dashboard-chart-controls select {
+  background: var(--dashboard-card-bg);
+  border: 1px solid var(--dashboard-border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 11px;
+  color: var(--dashboard-text-color);
+  min-width: 80px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dashboard-chart-controls select:hover {
+  border-color: var(--dashboard-accent);
+}
+
+.dashboard-chart-controls select:focus {
+  outline: none;
+  border-color: var(--dashboard-accent);
+  box-shadow: 0 0 0 2px rgba(146, 196, 218, 0.2);
+}
+
+/* Chart Title Styling */
+.dashboard-card h5,
+.dashboard-card .chart-title {
+  color: var(--dashboard-title-color) !important;
+  font-weight: 600;
+  margin-bottom: 12px;
+  font-size: 1.1rem;
+  line-height: 0.5;
+}
+
+/* Responsive Chart Adjustments */
+@media (max-width: 1400px) {
+  .dashboard-chart-controls select {
+    font-size: 10px;
+    padding: 3px 6px;
+    min-width: 70px;
+  }
+  
+  .dashboard-card {
+    height: 300px;
+    min-height: 300px;
+  }
+  
+  .dashboard-chart {
+    min-height: 200px;
+    max-height: 240px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .dashboard-card:nth-child(1),
+  .dashboard-card:nth-child(2),
+  .dashboard-card:nth-child(3),
+  .dashboard-card:nth-child(4) {
+    grid-column: 1;
+    grid-row: auto;
+  }
+  
+  .dashboard-card {
+    height: 350px;
+    min-height: 350px;
+  }
+  
+  .dashboard-chart {
+    min-height: 250px;
+    max-height: 290px;
+  }
+}
+
+@media (max-width: 900px) {
+  .dashboard-root {
+    padding: 16px;
+  }
+  
+  .dashboard-grid {
+    gap: 16px;
+  }
+  
+  .dashboard-card {
+    height: auto;
+    min-height: 320px;
+    padding: 16px;
+  }
+  
+  .dashboard-chart {
+    min-height: 220px;
+    max-height: 260px;
+  }
+  
+  .dashboard-chart-controls {
+    gap: 6px;
+  }
+  
+  .dashboard-chart-controls select {
+    font-size: 10px;
+    min-width: 65px;
+  }
+}
+
+@media (max-width: 600px) {
+  .dashboard-root {
+    padding: 12px;
+  }
+  
+  .dashboard-card {
+    padding: 14px;
+    min-height: 280px;
+  }
+  
+  .dashboard-chart {
+    min-height: 180px;
+    max-height: 220px;
+  }
+  
+  .dashboard-chart-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+  }
+  
+  .dashboard-chart-controls select {
+    width: 100%;
+    min-width: auto;
+  }
+}
+
+/* Nivo Chart Theme Overrides for Dashboard */
+.dashboard-chart .nivo-tooltip {
+  background: var(--dashboard-card-bg) !important;
+  border: 1px solid var(--dashboard-border) !important;
+  color: var(--dashboard-text-color) !important;
+  font-size: 11px !important;
+  border-radius: 6px !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+}
+
+.dashboard-chart .nivo-tooltip strong {
+  color: var(--dashboard-title-color) !important;
+}
+
+/* Performance Chart Specific Styles */
+.performance-chart-container {
+  background: var(--dashboard-card-bg);
+  border-radius: var(--dashboard-card-radius);
+  box-shadow: var(--dashboard-card-shadow);
+  border: 1px solid var(--dashboard-border);
+}
+
+.performance-chart-container.dashboard {
+  padding:2px;
+  
+  height: 200px;
+}
+
+.performance-chart-container:not(.dashboard) {
+  padding: 40px;
+  height: 800px;
+}
+
+/* Task Section Styling */
+.dashboard-tasks {
+  background: var(--dashboard-card-bg);
+  box-shadow: var(--dashboard-card-shadow);
+  border-radius: var(--dashboard-card-radius);
+  padding: 20px;
+  width: 100%;
+  border: 1px solid var(--dashboard-border);
+}
+
+.dashboard-tasks h5 {
+  color: var(--dashboard-title-color) !important;
+  font-weight: 600;
+  margin-bottom: 16px;
+  font-size: 1.1rem;
+}
+
+.dashboard-task-item {
+  background: linear-gradient(135deg, var(--dashboard-accent), #7fb3d3);
+  color: var(--dashboard-text-color);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(146, 196, 218, 0.15);
+  display: flex;
+  flex-direction: column;
+  transition: all 0.2s ease;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+.dashboard-task-item:hover {
+  transform: translateX(4px);
+  box-shadow: 0 4px 16px rgba(146, 196, 218, 0.25);
+}
+
+.dashboard-task-item:last-child {
+  margin-bottom: 0;
+}
+
+.dashboard-task-item h6 {
+  margin: 0 0 6px 0;
+  font-weight: 600;
+  color: var(--dashboard-text-color);
+  font-size: 0.95rem;
+}
+
+.dashboard-task-item .task-description {
+  font-size: 0.85rem;
+  color: var(--dashboard-title-color);
+  opacity: 0.9;
+  line-height: 1.4;
+}
+
+/* Loading States */
+.dashboard-chart-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--dashboard-muted);
+  font-size: 0.9rem;
+}
+
+.dashboard-chart-loading::after {
+  content: '';
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--dashboard-border);
+  border-top: 2px solid var(--dashboard-accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-left: 8px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Error States */
+.dashboard-chart-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--dashboard-error);
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 20px;
+}
+
+/* Enhanced Interactive Elements */
+.dashboard-card .interactive-element {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dashboard-card .interactive-element:hover {
+  opacity: 0.8;
+  transform: scale(1.02);
+}
+
+/* Print Styles */
+@media print {
+  .dashboard-root {
+    background: white !important;
+    padding: 0 !important;
+  }
+  
+  .dashboard-card {
+    box-shadow: none !important;
+    border: 1px solid #ccc !important;
+    break-inside: avoid;
+    margin-bottom: 20px;
+  }
+  
+  div.dashboard-chart-controls {
+    display: none !important;
+    
+  }
+
+  .dashboard-chart-controls{
+    padding-top: 20px;
+  }
+}

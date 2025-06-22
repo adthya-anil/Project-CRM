@@ -1,0 +1,239 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&family=Roboto+Slab:wght@100..900&display=swap');
+
+/* Base Reset and Global Styles */
+html, body, #root, .app, .content {
+  height: 100%;
+  width: 100%;
+  font-family: 'Roboto', sans-serif;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  overflow-x: hidden; /* Prevent horizontal scrolling */
+}
+
+*, *::before, *::after {
+  box-sizing: inherit;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Roboto Slab', serif;
+}
+
+.app {
+  display: flex;
+  position: relative;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.content {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Hide Scrollbars Completely */
+/* For Webkit browsers (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  width: 0px;
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: transparent;
+}
+
+/* For Firefox */
+html {
+  scrollbar-width: none;
+}
+
+/* For Internet Explorer and Edge Legacy */
+body {
+  -ms-overflow-style: none;
+}
+
+
+
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+
+/* DataGrid Responsive Styles */
+.MuiDataGrid-root {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.MuiDataGrid-main {
+  overflow-x: auto;
+  overflow-y: auto;
+}
+
+/* Container Responsive Styles */
+.container, .main-container {
+  width: 100%;
+  max-width: 100%;
+  padding: 0 1rem;
+  margin: 0 auto;
+}
+
+/* Mobile First Approach - Media Queries */
+
+/* Extra Small Devices (phones, 576px and down) */
+@media (max-width: 575.98px) {
+  .container, .main-container {
+    padding: 0 0.5rem;
+  }
+  
+  .app {
+    flex-direction: column;
+  }
+  
+  h1 { font-size: 1.5rem; }
+  h2 { font-size: 1.3rem; }
+  h3 { font-size: 1.1rem; }
+  h4 { font-size: 1rem; }
+  h5 { font-size: 0.9rem; }
+  h6 { font-size: 0.8rem; }
+  
+  .MuiDataGrid-root {
+    font-size: 0.75rem;
+  }
+}
+
+/* Small Devices (landscape phones, 576px and up) */
+@media (min-width: 576px) and (max-width: 767.98px) {
+  .container, .main-container {
+    max-width: 540px;
+    padding: 0 0.75rem;
+  }
+  
+  h1 { font-size: 1.75rem; }
+  h2 { font-size: 1.5rem; }
+  h3 { font-size: 1.25rem; }
+}
+
+/* Medium Devices (tablets, 768px and up) */
+@media (min-width: 768px) and (max-width: 991.98px) {
+  .container, .main-container {
+    max-width: 720px;
+    padding: 0 1rem;
+  }
+  
+  .app {
+    flex-direction: row;
+  }
+  
+  h1 { font-size: 2rem; }
+  h2 { font-size: 1.75rem; }
+  h3 { font-size: 1.5rem; }
+}
+
+/* Large Devices (desktops, 992px and up) */
+@media (min-width: 992px) and (max-width: 1199.98px) {
+  .container, .main-container {
+    max-width: 960px;
+  }
+  
+  h1 { font-size: 2.25rem; }
+  h2 { font-size: 2rem; }
+  h3 { font-size: 1.75rem; }
+}
+
+/* Extra Large Devices (large desktops, 1200px and up) */
+@media (min-width: 1200px) and (max-width: 1399.98px) {
+  .container, .main-container {
+    max-width: 1140px;
+  }
+}
+
+/* XXL Devices (larger desktops, 1400px and up) */
+@media (min-width: 1400px) {
+  .container, .main-container {
+    max-width: 1320px;
+  }
+}
+
+/* High DPI Displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Landscape Orientation for Mobile */
+@media (max-width: 767.98px) and (orientation: landscape) {
+  .app {
+    flex-direction: row;
+  }
+  
+  .container, .main-container {
+    padding: 0 1rem;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .app {
+    display: block;
+  }
+  
+  ::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Utility Classes for Responsive Design */
+.d-none { display: none !important; }
+.d-block { display: block !important; }
+.d-flex { display: flex !important; }
+
+/* Hide on mobile */
+@media (max-width: 767.98px) {
+  .d-md-none { display: none !important; }
+}
+
+/* Show only on mobile */
+@media (min-width: 768px) {
+  .d-md-block { display: block !important; }
+  .d-md-flex { display: flex !important; }
+}
+
+/* Responsive Text */
+.text-responsive {
+  font-size: clamp(0.875rem, 2.5vw, 1.125rem);
+}
+
+/* Ensure images are responsive */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Responsive tables */
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Focus styles for accessibility */
+/* *:focus {
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
+} */

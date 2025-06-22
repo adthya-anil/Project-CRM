@@ -1,0 +1,225 @@
+/* SideBar.css */
+
+/* Light mode variables */
+.sidebar-light {
+  --primary-bg: #ffffff;
+  --secondary-bg: #f8f9fa;
+  --accent-color: #3196c9;
+  --text-primary: #2c3e50;
+  --text-secondary: #6c757d;
+  --hover-bg: rgba(49, 150, 201, 0.08);
+  --active-bg: rgba(49, 150, 201, 0.12);
+  --border-color: rgba(0, 0, 0, 0.08);
+  --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+/* Dark mode variables */
+.sidebar-dark {
+  --primary-bg: #1a1a1a;
+  --secondary-bg: #2d2d2d;
+  --accent-color: #0a3456;
+  --text-primary: #3196c6;
+  --text-secondary: #b0b0b0;
+  --hover-bg: rgba(10, 52, 86, 0.15);
+  --active-bg: rgba(10, 52, 86, 0.25);
+  --border-color: rgba(255, 255, 255, 0.1);
+  --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Main sidebar container */
+.professional-sidebar {
+  height: 100vh;
+  position: relative;
+}
+
+/* Override react-pro-sidebar default styles */
+.professional-sidebar .ps-sidebar-container {
+  background: var(--primary-bg) !important;
+  border-right: 1px solid var(--border-color) !important;
+  box-shadow: var(--shadow) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Menu items styling */
+.professional-sidebar .ps-menuitem-root {
+  color: var(--text-primary) !important;
+  margin: 2px 8px !important;
+  border-radius: 12px !important;
+  transition: all 0.2s ease-in-out !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.professional-sidebar .ps-menuitem-root:hover {
+  background: var(--hover-bg) !important;
+  transform: translateX(4px) !important;
+}
+
+.professional-sidebar .ps-menuitem-root.ps-active {
+  background: var(--active-bg) !important;
+  color: var(--accent-color) !important;
+  font-weight: 600 !important;
+  border-left: 3px solid var(--accent-color) !important;
+}
+
+.professional-sidebar .ps-menuitem-root.ps-active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--accent-color);
+  border-radius: 0 2px 2px 0;
+}
+
+/* Menu item content */
+.professional-sidebar .ps-menu-button {
+  padding: 12px 16px !important;
+  font-weight: 500 !important;
+  font-size: 14px !important;
+  letter-spacing: 0.02em !important;
+}
+
+/* Icons styling */
+.professional-sidebar .ps-menu-icon {
+  margin-right: 12px !important;
+  font-size: 20px !important;
+  opacity: 0.8 !important;
+  transition: opacity 0.2s ease !important;
+}
+
+.professional-sidebar .ps-menuitem-root:hover .ps-menu-icon,
+.professional-sidebar .ps-menuitem-root.ps-active .ps-menu-icon {
+  opacity: 1 !important;
+}
+
+/* Header section */
+.sidebar-header {
+  padding: 24px 20px !important;
+  border-bottom: 1px solid var(--border-color) !important;
+  /* background: var(--secondary-bg) !important; */
+  margin-bottom: 8px !important;
+}
+
+.sidebar-header .logo-text {
+  font-size: 24px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.5px !important;
+  margin: 0 !important;
+}
+
+.sidebar-header .logo-safety {
+  color: var(--accent-color) !important;
+}
+
+.sidebar-header .logo-catch {
+  color: var(--text-primary) !important;
+}
+
+/* Profile section */
+.profile-section {
+  padding: 20px !important;
+  text-align: center !important;
+  /* background: var(--secondary-bg) !important; */
+  margin: 8px !important;
+  border-radius: 16px !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+.profile-image {
+  width: 80px !important;
+  height: 80px !important;
+  border-radius: 50% !important;
+  border: 3px solid var(--accent-color) !important;
+  padding: 2px !important;
+  background: var(--primary-bg) !important;
+  margin-bottom: 12px !important;
+  transition: transform 0.2s ease !important;
+}
+
+.profile-image:hover {
+  transform: scale(1.05) !important;
+}
+
+.profile-name {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  color: var(--text-primary) !important;
+  margin: 8px 0 4px 0 !important;
+  letter-spacing: 0.5px !important;
+}
+
+.profile-role {
+  font-size: 12px !important;
+  color: var(--accent-color) !important;
+  font-weight: 500 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+}
+
+/* Section headers */
+.section-header {
+  font-size: 11px !important;
+  color: var(--text-secondary) !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1.2px !important;
+  margin: 24px 20px 8px 20px !important;
+  opacity: 0.7 !important;
+}
+
+/* Collapse button */
+.collapse-button {
+  background: var(--hover-bg) !important;
+  border-radius: 8px !important;
+  transition: all 0.2s ease !important;
+  padding: 8px !important;
+}
+
+.collapse-button:hover {
+  background: var(--active-bg) !important;
+  transform: scale(1.05) !important;
+}
+
+/* Scrollbar styling */
+.professional-sidebar .ps-sidebar-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.professional-sidebar .ps-sidebar-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.professional-sidebar .ps-sidebar-container::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+
+.professional-sidebar .ps-sidebar-container::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* Animation for collapse/expand */
+.professional-sidebar .ps-sidebar-container {
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .professional-sidebar .ps-sidebar-container {
+    position: fixed !important;
+    z-index: 1000 !important;
+    height: 100vh !important;
+  }
+}
+
+/* Additional visual enhancements */
+.professional-sidebar .ps-menu-root {
+  padding: 8px 0 !important;
+}
+
+/* Subtle gradient effect for active items */
+.professional-sidebar .ps-menuitem-root.ps-active {
+  background: linear-gradient(135deg, var(--active-bg) 0%, transparent 100%) !important;
+}

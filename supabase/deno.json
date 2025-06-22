@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "get-templates": {
+      "verify_jwt": false
+    }
+  }
+}
