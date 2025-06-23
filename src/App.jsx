@@ -66,7 +66,7 @@ function App() {
               <Route path="/leads" element = {<Leads isAdmin={isAdmin} />} />
               <Route path="/team" element = {<Team isAdmin={isAdmin}/>} />
               <Route path="/form" element = {<Form />} />
-              <Route path="/calendar" element = {<Calendar />} />
+              <Route path="/calendar" element = {<Calendar isAdmin={isAdmin} />} />
               <Route path="/pie" element = {<Pie isAdmin={isAdmin}/>} />
               <Route path="/line" element = {<Line isAdmin={isAdmin}/>} />
               <Route path="/bar" element = {<Bar isAdmin={isAdmin}/>} />

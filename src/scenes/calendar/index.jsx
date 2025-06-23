@@ -26,7 +26,7 @@ import { format } from 'date-fns';
 import './calendarStyles.css';
 
 
-const Calendar = () => {
+const Calendar = ({isAdmin}) => {
   const [user, setUser] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [title, setTitle] = useState('');
@@ -97,7 +97,9 @@ const handleMarkDone = (id) => {
 };
 
 
-  const isAdmin = user?.email === 'adthya.anil@gmail.com';
+  // This line is unnecessary and incorrect.
+  // You already receive `isAdmin` as a prop in the function parameter.
+  // Remove this line entirely.
   const incompleteTasks = user ? events.filter(e => !e.done_at && e.user_id === user.id) : [];
   const doneTasks = user ? events.filter(e =>
     e.done_at &&
