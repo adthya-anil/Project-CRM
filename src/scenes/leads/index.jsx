@@ -237,9 +237,44 @@ const handleDelete = () => {
         return (<DropDown id={params.id} value={params.value} table={TABLE_NAME} option={['Converted','Converting','Idle']} column={'status'}/>)
       }
     },
-    { field: "coursesAttended", headerName: "Courses Attended", flex: 1, editable: false,
-      renderCell: (params) => (params.value?.join(", ") || "")
-     },
+   {
+  field: "coursesAttended",
+  headerName: "Courses Attended",
+  flex: 1,
+  editable: true,
+
+  // Display the array as comma-separated string
+  renderCell: (params) => {
+    if (!params.value) return "";
+    return Array.isArray(params.value) ? params.value.join(", ") : params.value;
+  },
+
+  // Convert array to string for editing
+  valueGetter: (value) => {
+    if (!value) return "";
+    return Array.isArray(value) ? value.join(", ") : value;
+  },
+
+  // Convert string back to array when saving
+  valueSetter: (value, row) => {
+    if (!value) {
+      return { ...row, coursesAttended: [] };
+    }
+    
+    // Handle the case where value might be a string
+    const stringValue = typeof value === 'string' ? value : String(value);
+    
+    const updatedArray = stringValue
+      .split(",")
+      .map((item) => item.trim())
+      .filter((item) => item !== "");
+
+    return {
+      ...row,
+      coursesAttended: updatedArray,
+    };
+  }
+},
      { field: "next_course", headerName: "Next Course", flex: 1, editable: true },
      { field: "referrals", headerName: "Referrals", flex: 1, editable: false,
       renderCell: (params) => (params.value?.join(", ") || "")
