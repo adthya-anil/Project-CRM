@@ -19,7 +19,7 @@ const EmailDialog = ({ open, onClose, selectedRecipients = [] }) => {
   const [success, setSuccess] = useState('');
 
   // Replace with your actual Mailgun template names
-  const availableTemplates = ['test', 'idip template - july batch', 'offer-july', 'webinar-invite'];
+  const availableTemplates = ['follow-up', 'idip template - july batch', 'igc', 'welcome'];
 
   useEffect(() => {
     if (open) {
