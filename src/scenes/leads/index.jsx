@@ -207,10 +207,10 @@ const handleDelete = () => {
     ...(isAdmin && users.length > 0
   ? [{
       field: 'user_id',
-      headerName: 'Assigned User',
+      headerName: 'Course Advisor',
       flex: 1,
       filterable: true,
-      minWidth: 120,
+      minWidth: 150,
       renderCell: (params) => (
         <AssignUserCell
           value={params.value}
