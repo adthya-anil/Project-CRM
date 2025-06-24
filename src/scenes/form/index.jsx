@@ -16,70 +16,547 @@ import {
   MenuItem,
   Select,
   Divider,
-  Container,
-  Chip,
+  List,
   IconButton,
-  Alert, 
-  AlertTitle, 
-  CircularProgress
+  ListItem, 
+  ListItemText, 
+ Container,
+ CircularProgress,
+ Alert
 } from "@mui/material";
 import { Plus, Trash2 } from "lucide-react";
 import { supabase } from "../../../supabaseClient";
 import Papa from "papaparse";
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+//import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import { Upload, FileText } from 'lucide-react';
 
 
-
-const CSVUploader = () => {
+const CSVUploader = ({ tableName = 'mock' }) => {
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState("");
+  const [errors, setErrors] = useState([]);
+
+  // Expected columns for CRM schema
+  const expectedColumns = [
+    "Name", "JobTitle", "Phone", "Email", "State", "Country", "Organization", 
+    "temperature", "timestamp", "status", "coursesAttended", "referrals", 
+    "Source", "recency", "frequency", "monetary", "score", "classification", 
+    "next_course", "created_at", "status_updated_at"
+  ];
+
+  // Header normalization mapping
+  const headerNormalization = {
+    // Name variations
+    'name': 'Name',
+    'NamE': 'Name',
+    'nAme': 'Name',
+    'NAME': 'Name',
+    'Full Name': 'Name',
+    'FullName' : 'Name',
+    'full name' : 'Name',
+    'fullname' : 'Name',
+    
+    // JobTitle variations
+    'job title': 'JobTitle',
+    'jobtitle': 'JobTitle',
+    'Jobtitle': 'JobTitle',
+    'JOB_TITLE': 'JobTitle',
+    'job_title': 'JobTitle',
+    'occupation': 'JobTitle',
+    'Occupation': 'JobTitle',
+    'job': 'JobTitle',
+    'Job': 'JobTitle',
+    'Work': 'JobTitle',
+    'work': 'JobTitle',
+    'OCCUPATION': 'JobTitle',
+    'JOB': 'JobTitle',
+    
+    // Organization variations
+    'organisation': 'Organization',
+    'ORGANISATION': 'Organization',
+    'organization': 'Organization',
+    'ORGANIZATION': 'Organization',
+    
+    // Country variations
+    'country': 'Country',
+    'COUNTRY': 'Country',
+    
+    // State variations
+    'state': 'State',
+    'STATE': 'State',
+    'city': 'State',
+    'City': 'State',
+    'district': 'State',
+    'District': 'State',
+    'CITY': 'State',
+    
+    // Phone variations
+    'phone': 'Phone',
+    'PHONE': 'Phone',
+    'phone_number': 'Phone',
+    'phonenumber': 'Phone',
+    'MOBILE NUMBER': 'Phone',
+    'Mobile Number': 'Phone',
+    'mobile number': 'Phone',
+    
+    // Email variations
+    'email': 'Email',
+    'EMAIL': 'Email',
+    'email_address': 'Email',
+    
+    // Source variations
+    'source': 'Source',
+    'SOURCE': 'Source',
+    
+    // Temperature variations
+    'Temperature': 'temperature',
+    'TEMPERATURE': 'temperature',
+    
+    // Status variations
+    'Status': 'status',
+    'STATUS': 'status',
+    
+    // Timestamp variations
+    'Timestamp': 'timestamp',
+    'TIMESTAMP': 'timestamp',
+    'time_stamp': 'timestamp',
+    
+    // Created at variations
+    'created_at': 'created_at',
+    'Created_At': 'created_at',
+    'CREATED_AT': 'created_at',
+    'createdAt': 'created_at',
+    
+    // Status updated at variations
+    'status_updated_at': 'status_updated_at',
+    'Status_Updated_At': 'status_updated_at',
+    'STATUS_UPDATED_AT': 'status_updated_at',
+    'statusUpdatedAt': 'status_updated_at',
+    
+    // Courses attended variations
+    'courses_attended': 'coursesAttended',
+    'Courses_Attended': 'coursesAttended',
+    'COURSES_ATTENDED': 'coursesAttended',
+    'courses attended': 'coursesAttended',
+    
+    // Referrals variations
+    'Referrals': 'referrals',
+    'REFERRALS': 'referrals',
+    
+    // Numeric field variations
+    'Recency': 'recency',
+    'RECENCY': 'recency',
+    'Frequency': 'frequency',
+    'FREQUENCY': 'frequency',
+    'Monetary': 'monetary',
+    'MONETARY': 'monetary',
+    'Score': 'score',
+    'SCORE': 'score',
+    
+    // Classification variations
+    'Classification': 'classification',
+    'CLASSIFICATION': 'classification',
+    
+    // Next course variations
+    'next_course': 'next_course',
+    'Next_Course': 'next_course',
+    'NEXT_COURSE': 'next_course',
+    'nextCourse': 'next_course'
+  };
+
+  const normalizeHeaders = (headers) => {
+    return headers.map(header => {
+      const trimmed = header.trim();
+      return headerNormalization[trimmed] || trimmed;
+    });
+  };
+
+  const convertISTToUTC = (istDateString) => {
+    if (!istDateString || istDateString === 'null' || istDateString === '') {
+      return null;
+    }
+    
+    try {
+      const date = new Date(istDateString);
+      if (isNaN(date.getTime())) {
+        return null;
+      }
+      
+      // Convert IST (UTC+5:30) to UTC
+      const utcDate = new Date(date.getTime() - (5.5 * 60 * 60 * 1000));
+      return utcDate;
+    } catch (error) {
+      console.error('Date conversion error:', error);
+      return null;
+    }
+  };
+
+  const formatPhoneNumber = (phoneValue) => {
+    if (!phoneValue || phoneValue === 'null' || phoneValue === '') {
+      return 'null';
+    }
+    
+    let phoneStr = String(phoneValue);
+    
+    // Handle scientific notation (e.g., 9.19541E+11)
+    if (phoneStr.includes('E+') || phoneStr.includes('e+')) {
+      try {
+        const phoneNum = parseFloat(phoneStr);
+        if (!isNaN(phoneNum)) {
+          phoneStr = phoneNum.toString();
+        }
+      } catch (error) {
+        console.error('Phone number conversion error:', error);
+      }
+    }
+    
+    // Remove any non-digit characters except +
+    phoneStr = phoneStr.replace(/[^\d+]/g, '');
+    
+    // Ensure it starts with + if it's an international number
+    if (phoneStr.length > 10 && !phoneStr.startsWith('+')) {
+      phoneStr = '+' + phoneStr;
+    }
+    
+    return phoneStr;
+  };
+
+  const validateAndCleanData = (row) => {
+    const cleanedRow = {};
+    
+    expectedColumns.forEach(column => {
+      const value = row[column];
+      
+      switch (column) {
+        case 'Phone':
+          cleanedRow[column] = formatPhoneNumber(value);
+          break;
+          
+        case 'recency':
+        case 'frequency':
+        case 'monetary':
+          if (value === undefined || value === null || value === '' || value === 'null') {
+            cleanedRow[column] = null;
+          } else {
+            const numValue = Number(value);
+            if (isNaN(numValue)) {
+              cleanedRow[column] = null;
+            } else if (numValue >= 6) {
+              cleanedRow[column] = 5;
+            } else {
+              cleanedRow[column] = numValue;
+            }
+          }
+          break;
+          
+        case 'score':
+          if (value === undefined || value === null || value === '' || value === 'null') {
+            cleanedRow[column] = null;
+          } else {
+            const numValue = Number(value);
+            if (isNaN(numValue)) {
+              cleanedRow[column] = null;
+            } else if (numValue >= 126) {
+              cleanedRow[column] = 125;
+            } else {
+              cleanedRow[column] = numValue;
+            }
+          }
+          break;
+          
+        case 'status':
+          const validStatuses = ['Converted', 'Converting', 'Idle'];
+          cleanedRow[column] = validStatuses.includes(value) ? value : 'Idle';
+          break;
+          
+        case 'temperature':
+          const validTemperatures = ['Hot', 'Warm', 'Cold'];
+          cleanedRow[column] = validTemperatures.includes(value) ? value : 'Cold';
+          break;
+          
+        case 'coursesAttended':
+        case 'referrals':
+          if (value === undefined || value === null || value === '' || value === 'null') {
+            cleanedRow[column] = [];
+          } else if (Array.isArray(value)) {
+            cleanedRow[column] = value;
+          } else if (typeof value === 'string') {
+            try {
+              const parsed = JSON.parse(value);
+              cleanedRow[column] = Array.isArray(parsed) ? parsed : [];
+            } catch (error) {
+              cleanedRow[column] = value.split(',').map(item => item.trim()).filter(item => item);
+            }
+          } else {
+            cleanedRow[column] = [];
+          }
+          break;
+          
+        case 'timestamp':
+          const utcDate = convertISTToUTC(value);
+          if (utcDate) {
+            cleanedRow[column] = utcDate.toISOString().slice(0, -1);
+          } else {
+            cleanedRow[column] = new Date().toISOString().slice(0, -1);
+          }
+          break;
+          
+        case 'created_at':
+        case 'status_updated_at':
+          const utcDateWithZ = convertISTToUTC(value);
+          if (utcDateWithZ) {
+            cleanedRow[column] = utcDateWithZ.toISOString();
+          } else {
+            cleanedRow[column] = new Date().toISOString();
+          }
+          break;
+          
+        default:
+          if (value === undefined || value === null || value === '') {
+            cleanedRow[column] = 'null';
+          } else {
+            cleanedRow[column] = String(value).trim();
+          }
+          break;
+      }
+    });
+    
+    return cleanedRow;
+  };
+
+  const checkExistingRecords = async (data) => {
+    try {
+      const phones = data.map(row => row.Phone).filter(phone => phone && phone !== 'null');
+      const emails = data.map(row => row.Email).filter(email => email && email !== 'null');
+      
+      const promises = [];
+      
+      // Check existing phone numbers
+      if (phones.length > 0) {
+        promises.push(
+          supabase
+            .from(tableName)
+            .select('Phone')
+            .in('Phone', phones)
+        );
+      } else {
+        promises.push(Promise.resolve({ data: [] }));
+      }
+      
+      // Check existing emails
+      if (emails.length > 0) {
+        promises.push(
+          supabase
+            .from(tableName)
+            .select('Email')
+            .in('Email', emails)
+        );
+      } else {
+        promises.push(Promise.resolve({ data: [] }));
+      }
+      
+      const [phoneResult, emailResult] = await Promise.all(promises);
+      
+      if (phoneResult.error) throw phoneResult.error;
+      if (emailResult.error) throw emailResult.error;
+      
+      const existingPhoneSet = new Set((phoneResult.data || []).map(record => record.Phone));
+      const existingEmailSet = new Set((emailResult.data || []).map(record => record.Email?.toLowerCase()));
+      
+      return { existingPhoneSet, existingEmailSet };
+    } catch (error) {
+      console.error('Error checking existing records:', error);
+      throw error;
+    }
+  };
+
+  const checkAllDuplicates = async (data) => {
+    const duplicateErrors = [];
+    const phoneNumbers = new Set();
+    const emails = new Set();
+    
+    const { existingPhoneSet, existingEmailSet } = await checkExistingRecords(data);
+    
+    data.forEach((row, index) => {
+      const rowNumber = index + 1;
+      
+      // Check for duplicate phone numbers within the file
+      if (row.Phone && row.Phone !== 'null') {
+        if (phoneNumbers.has(row.Phone)) {
+          duplicateErrors.push({
+            type: 'file_duplicate',
+            field: 'Phone',
+            value: row.Phone,
+            row: rowNumber,
+            message: `Row ${rowNumber}: Duplicate phone number "${row.Phone}" found in uploaded file`
+          });
+        } else {
+          phoneNumbers.add(row.Phone);
+        }
+        
+        if (existingPhoneSet.has(row.Phone)) {
+          duplicateErrors.push({
+            type: 'database_duplicate',
+            field: 'Phone',
+            value: row.Phone,
+            row: rowNumber,
+            message: `Row ${rowNumber}: Phone number "${row.Phone}" already exists in database`
+          });
+        }
+      }
+      
+      // Check for duplicate emails within the file
+      if (row.Email && row.Email !== 'null') {
+        const emailLower = row.Email.toLowerCase();
+        if (emails.has(emailLower)) {
+          duplicateErrors.push({
+            type: 'file_duplicate',
+            field: 'Email',
+            value: row.Email,
+            row: rowNumber,
+            message: `Row ${rowNumber}: Duplicate email "${row.Email}" found in uploaded file`
+          });
+        } else {
+          emails.add(emailLower);
+        }
+        
+        if (existingEmailSet.has(emailLower)) {
+          duplicateErrors.push({
+            type: 'database_duplicate',
+            field: 'Email',
+            value: row.Email,
+            row: rowNumber,
+            message: `Row ${rowNumber}: Email "${row.Email}" already exists in database`
+          });
+        }
+      }
+    });
+    
+    return duplicateErrors;
+  };
+
+  const insertIntoSupabase = async (data) => {
+    try {
+      const results = {
+        successful: [],
+        failed: [],
+        totalProcessed: 0
+      };
+      
+      for (let i = 0; i < data.length; i++) {
+        try {
+          results.totalProcessed++;
+          
+          const { data: insertedRecord, error } = await supabase
+            .from(tableName)
+            .insert([data[i]])
+            .select();
+          
+          if (error) throw error;
+          
+          results.successful.push({
+            row: i + 1,
+            data: data[i]
+          });
+          
+        } catch (error) {
+          let errorMessage = error.message;
+          let duplicateField = null;
+          let duplicateValue = null;
+          
+          if (errorMessage.includes('unique constraint') || errorMessage.includes('duplicate key')) {
+            if (errorMessage.toLowerCase().includes('phone')) {
+              duplicateField = 'Phone';
+              duplicateValue = data[i].Phone;
+            } else if (errorMessage.toLowerCase().includes('email')) {
+              duplicateField = 'Email';
+              duplicateValue = data[i].Email;
+            }
+          }
+          
+          results.failed.push({
+            row: i + 1,
+            data: data[i],
+            error: errorMessage,
+            duplicateField,
+            duplicateValue
+          });
+        }
+      }
+      
+      return results;
+      
+    } catch (error) {
+      console.error('Supabase insert error:', error);
+      throw error;
+    }
+  };
 
   const handleFileUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
-    
-    
-    const batchInsert = async (rows, batchSize = 100) => {
-  for (let i = 0; i < rows.length; i += batchSize) {
-    const chunk = rows.slice(i, i + batchSize);
-    const { error } = await supabase.from("mock").insert(chunk);
-    if (error) {
-      console.error("Error inserting batch:", error);
-      throw error;
-    }
-  }
-};
 
+    if (!supabase) {
+      setMessage("Supabase client not provided");
+      return;
+    }
 
     setUploading(true);
     setMessage("");
+    setErrors([]);
 
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
       complete: async function (results) {
-  const rows = results.data.map((row) => ({
-    ...row,
-    coursesAttended: row.coursesAttended ? JSON.parse(row.coursesAttended) : [],
-    referrals: row.referrals ? JSON.parse(row.referrals) : [],
-    recency: row.recency ? Number(row.recency) : 0,
-    frequency: row.frequency ? Number(row.frequency) : 0,
-    monetary: row.monetary ? Number(row.monetary) : 0,
-    score: row.score ? Number(row.score) : 0,
-    created_at: row.created_at || new Date().toISOString(),
-    status_updated_at: row.status_updated_at || new Date().toISOString()
-  }));
+        try {
+          const normalizedHeaders = normalizeHeaders(results.meta.fields);
+          
+          const normalizedData = results.data.map(row => {
+            const newRow = {};
+            Object.keys(row).forEach((key, index) => {
+              const normalizedKey = normalizedHeaders[index];
+              newRow[normalizedKey] = row[key];
+            });
+            return newRow;
+          });
 
-  try {
-    await batchInsert(rows); // insert in batches of 100
-    setMessage("CSV data uploaded successfully!");
-  } catch (error) {
-    console.error("Upload error:", error);
-    setMessage("Failed to upload data: " + error.message);
-  }
-
-  setUploading(false);
-},
+          const cleanedData = normalizedData.map(validateAndCleanData);
+          
+          const duplicateErrors = await checkAllDuplicates(cleanedData);
+          
+          if (duplicateErrors.length > 0) {
+            setErrors(duplicateErrors.map(error => error.message));
+            setMessage(`Found ${duplicateErrors.length} duplicate entries. Please fix these issues before uploading.`);
+            setUploading(false);
+            return;
+          }
+          
+          const result = await insertIntoSupabase(cleanedData);
+          
+          if (result.failed && result.failed.length > 0) {
+            const failureErrors = result.failed.map(failure => {
+              if (failure.duplicateField && failure.duplicateValue) {
+                return `Row ${failure.row}: ${failure.duplicateField} "${failure.duplicateValue}" already exists in database`;
+              }
+              return `Row ${failure.row}: ${failure.error}`;
+            });
+            
+            setErrors(failureErrors);
+            setMessage(`Processed ${result.totalProcessed} records. ${result.successful.length} successful, ${result.failed.length} failed.`);
+          } else if (result.successful) {
+            setMessage(`Successfully uploaded ${result.successful.length} records to the database.`);
+          } else {
+            setMessage("Failed to upload data to the database.");
+          }
+          
+        } catch (error) {
+          console.error("Processing error:", error);
+          setMessage("Failed to process CSV file: " + error.message);
+        }
+        
+        setUploading(false);
+      },
       error: function (err) {
         console.error("Parsing error:", err);
         setMessage("Failed to parse CSV file.");
@@ -89,103 +566,152 @@ const CSVUploader = () => {
   };
 
   return (
-    <Box 
-  sx={{ 
-    my: 3,
-    p: 3,
-    border: '2px dashed #e0e7ff',
-    borderRadius: 2,
-    backgroundColor: '#fafbff',
-    transition: 'all 0.3s ease',
-    '&:hover': {
-      borderColor: '#3b82f6',
-      backgroundColor: '#f8faff'
-    }
-  }}
->
-  <Typography 
-    variant="h6" 
-    sx={{ 
-      fontWeight: 600, 
-      color: '#0a3456', 
-      mb: 2,
-      display: 'flex',
-      alignItems: 'center',
-      gap: 1
-    }}
-  >
-    📊 Bulk Upload CSV
-  </Typography>
-  
-  <Box sx={{ mb: 2 }}>
-    <input
-      type="file"
-      accept=".csv"
-      onChange={handleFileUpload}
-      disabled={uploading}
-      id="csv-upload"
-      style={{ display: 'none' }}
-    />
-    <label htmlFor="csv-upload">
-      <Button
-        variant="outlined"
-        component="span"
-        disabled={uploading}
-        startIcon={uploading ? <CircularProgress size={16} /> : <CloudUploadIcon />}
-        sx={{
-          borderColor: '#3b82f6',
-          color: '#3b82f6',
-          fontWeight: 500,
-          px: 3,
-          py: 1.5,
-          borderRadius: 2,
-          textTransform: 'none',
-          fontSize: '0.95rem',
-          '&:hover': {
-            borderColor: '#2563eb',
-            backgroundColor: '#eff6ff'
-          },
-          '&:disabled': {
-            opacity: 0.6
-          }
-        }}
-      >
-        {uploading ? 'Uploading...' : 'Choose CSV File'}
-      </Button>
-    </label>
-  </Box>
+    <Box sx={{ mb: 5 }}>
+      {/* CSV Upload Section */}
+      <Box sx={{ mb: 3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+          <Box 
+            sx={{ 
+              width: 4, 
+              height: 40, 
+              background: 'linear-gradient(135deg, #0a3456, #3196c6)',
+              borderRadius: 2,
+              mr: 2 
+            }} 
+          />
+          <Typography 
+            variant="h5" 
+            sx={{ 
+              fontWeight: 600,
+              color: '#0a3456 !important',
+              letterSpacing: '0.5px'
+            }}
+          >
+            Bulk Upload CSV
+          </Typography>
+        </Box>
+        
+        <Paper
+          elevation={2}
+          sx={{
+            p: 4,
+            borderRadius: 3,
+            backgroundColor: 'rgba(255, 255, 255, 0.8)',
+            border: '1px solid rgba(49, 150, 198, 0.2)',
+            transition: 'all 0.3s ease',
+            '&:hover': {
+              boxShadow: '0 8px 25px rgba(10, 52, 86, 0.15)',
+              transform: 'translateY(-2px)'
+            }
+          }}
+        >
+          {/* File Upload Button */}
+          <Box sx={{ mb: 3 }}>
+            <input
+              accept=".csv"
+              style={{ display: 'none' }}
+              id="csv-upload-input"
+              type="file"
+              onChange={handleFileUpload}
+              disabled={uploading}
+            />
+            <label htmlFor="csv-upload-input">
+              <Button
+                variant="contained"
+                component="span"
+                startIcon={uploading ? <CircularProgress size={20} color="inherit" /> : <Upload size={20} />}
+                disabled={uploading}
+                sx={{
+                  background: 'linear-gradient(135deg, #0a3456 0%, #3196c6 100%)',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, #0a3456 0%, #2680b0 100%)',
+                  },
+                  borderRadius: 2,
+                  px: 4,
+                  py: 1.5,
+                  textTransform: 'none',
+                  fontSize: '16px',
+                  fontWeight: 500,
+                  boxShadow: '0 4px 15px rgba(10, 52, 86, 0.2)',
+                  '&:disabled': {
+                    background: '#e5e7eb',
+                    color: '#9ca3af'
+                  }
+                }}
+              >
+                {uploading ? 'Processing...' : 'Choose CSV File'}
+              </Button>
+            </label>
+          </Box>
 
-  {message && (
-    <Alert 
-      severity={uploading ? "info" : "success"}
-      sx={{ 
-        mt: 2,
-        borderRadius: 2,
-        '& .MuiAlert-icon': {
-          fontSize: '1.2rem'
-        }
-      }}
-    >
-      <AlertTitle sx={{ fontWeight: 600 }}>
-        {uploading ? 'Processing' : 'Success'}
-      </AlertTitle>
-      {message}
-    </Alert>
-  )}
+          {/* Tip */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ fontSize: '14px' }}>
+              ⚡ Tip: Ensure your CSV file has the correct headers and format
+            </Typography>
+          </Box>
 
-  <Typography 
-    variant="body2" 
-    sx={{ 
-      color: '#6b7280',
-      mt: 2,
-      fontStyle: 'italic'
-    }}
-  >
-    💡 Tip: Ensure your CSV file has the correct headers and format
-  </Typography>
-</Box>
+          {/* Loading State */}
+          {uploading && (
+            <Alert severity="info" sx={{ mb: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <CircularProgress size={20} />
+                <Typography>Processing and uploading...</Typography>
+              </Box>
+            </Alert>
+          )}
+
+          {/* Success/Error Message */}
+          {message && (
+            <Alert 
+              severity={errors.length > 0 ? "warning" : "success"} 
+              sx={{ mb: 3 }}
+            >
+              {message}
+            </Alert>
+          )}
+
+          {/* Error List */}
+          {errors.length > 0 && (
+            <Paper
+              variant="outlined"
+              sx={{
+                p: 2,
+                backgroundColor: '#fef2f2',
+                borderColor: '#fecaca',
+                maxHeight: 300,
+                overflow: 'auto'
+              }}
+            >
+              <Typography variant="subtitle2" fontWeight="bold" color="error" sx={{ mb: 2 }}>
+                Issues Found:
+              </Typography>
+              <List dense>
+                {errors.map((error, index) => (
+                  <ListItem key={index} sx={{ px: 0, py: 0.5 }}>
+                    <ListItemText
+                      primary={
+                        <Typography variant="body2" color="error">
+                          {error}
+                        </Typography>
+                      }
+                    />
+                  </ListItem>
+                ))}
+              </List>
+            </Paper>
+          )}
+        </Paper>
+      </Box>
+
+      <Divider sx={{ my: 4, borderColor: 'rgba(49, 150, 198, 0.2)' }} />
+    </Box>
   );
 };
+
+
+
+
 
 
 const Form = () => {
