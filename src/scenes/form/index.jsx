@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import {
   TextField,
@@ -46,128 +46,262 @@ const CSVUploader = ({ tableName = 'mock' }) => {
 
   // Header normalization mapping
   const headerNormalization = {
-    // Name variations
-    'name': 'Name',
-    'NamE': 'Name',
-    'nAme': 'Name',
-    'NAME': 'Name',
-    'Full Name': 'Name',
-    'FullName' : 'Name',
-    'full name' : 'Name',
-    'fullname' : 'Name',
-    
-    // JobTitle variations
-    'job title': 'JobTitle',
-    'jobtitle': 'JobTitle',
-    'Jobtitle': 'JobTitle',
-    'JOB_TITLE': 'JobTitle',
-    'job_title': 'JobTitle',
-    'occupation': 'JobTitle',
-    'Occupation': 'JobTitle',
-    'job': 'JobTitle',
-    'Job': 'JobTitle',
-    'Work': 'JobTitle',
-    'work': 'JobTitle',
-    'OCCUPATION': 'JobTitle',
-    'JOB': 'JobTitle',
-    
-    // Organization variations
-    'organisation': 'Organization',
-    'ORGANISATION': 'Organization',
-    'organization': 'Organization',
-    'ORGANIZATION': 'Organization',
-    
-    // Country variations
-    'country': 'Country',
-    'COUNTRY': 'Country',
-    
-    // State variations
-    'state': 'State',
-    'STATE': 'State',
-    'city': 'State',
-    'City': 'State',
-    'district': 'State',
-    'District': 'State',
-    'CITY': 'State',
-    
-    // Phone variations
-    'phone': 'Phone',
-    'PHONE': 'Phone',
-    'phone_number': 'Phone',
-    'phonenumber': 'Phone',
-    'MOBILE NUMBER': 'Phone',
-    'Mobile Number': 'Phone',
-    'mobile number': 'Phone',
-    
-    // Email variations
-    'email': 'Email',
-    'EMAIL': 'Email',
-    'email_address': 'Email',
-    
-    // Source variations
-    'source': 'Source',
-    'SOURCE': 'Source',
-    
-    // Temperature variations
-    'Temperature': 'temperature',
-    'TEMPERATURE': 'temperature',
-    
-    // Status variations
-    'Status': 'status',
-    'STATUS': 'status',
-    
-    // Timestamp variations
-    'Timestamp': 'timestamp',
-    'TIMESTAMP': 'timestamp',
-    'time_stamp': 'timestamp',
-    
-    // Created at variations
-    'created_at': 'created_at',
-    'Created_At': 'created_at',
-    'CREATED_AT': 'created_at',
-    'createdAt': 'created_at',
-    
-    // Status updated at variations
-    'status_updated_at': 'status_updated_at',
-    'Status_Updated_At': 'status_updated_at',
-    'STATUS_UPDATED_AT': 'status_updated_at',
-    'statusUpdatedAt': 'status_updated_at',
-    
-    // Courses attended variations
-    'courses_attended': 'coursesAttended',
-    'Courses_Attended': 'coursesAttended',
-    'COURSES_ATTENDED': 'coursesAttended',
-    'courses attended': 'coursesAttended',
-    
-    // Referrals variations
-    'Referrals': 'referrals',
-    'REFERRALS': 'referrals',
-    
-    // Numeric field variations
-    'Recency': 'recency',
-    'RECENCY': 'recency',
-    'Frequency': 'frequency',
-    'FREQUENCY': 'frequency',
-    'Monetary': 'monetary',
-    'MONETARY': 'monetary',
-    'Score': 'score',
-    'SCORE': 'score',
-    
-    // Classification variations
-    'Classification': 'classification',
-    'CLASSIFICATION': 'classification',
-    
-    // Next course variations
-    'next_course': 'next_course',
-    'Next_Course': 'next_course',
-    'NEXT_COURSE': 'next_course',
-    'nextCourse': 'next_course'
-  };
+  // Name variations - FIXED syntax errors (removed spaces before colons)
+  'name': 'Name',
+  'NamE': 'Name',
+  'nAme': 'Name',
+  'NAME': 'Name',
+  'Full Name': 'Name',
+  'FullName': 'Name',        // FIXED: was 'FullName' : 'Name'
+  'full name': 'Name',       // FIXED: was 'full name' : 'Name'
+  'fullname': 'Name',        // FIXED: was 'fullname' : 'Name'
+  'FULL NAME': 'Name',       // ADDED
+  'Full_Name': 'Name',       // ADDED
+  'full_name': 'Name',       // ADDED
+  'FULL_NAME': 'Name',       // ADDED
+  
+  // JobTitle variations
+  'job title': 'JobTitle',
+  'jobtitle': 'JobTitle',
+  'Jobtitle': 'JobTitle',
+  'JOB_TITLE': 'JobTitle',
+  'job_title': 'JobTitle',
+  'occupation': 'JobTitle',
+  'Occupation': 'JobTitle',
+  'job': 'JobTitle',
+  'Job': 'JobTitle',
+  'Work': 'JobTitle',
+  'work': 'JobTitle',
+  'OCCUPATION': 'JobTitle',
+  'JOB': 'JobTitle',
+  'Job Title': 'JobTitle',   // ADDED
+  'WORK': 'JobTitle',        // ADDED
+  'position': 'JobTitle',    // ADDED
+  'Position': 'JobTitle',    // ADDED
+  'POSITION': 'JobTitle',    // ADDED
+  
+  // Organization variations
+  'organisation': 'Organization',
+  'ORGANISATION': 'Organization',
+  'organization': 'Organization',
+  'ORGANIZATION': 'Organization',
+  'company': 'Organization',           // ADDED
+  'Company': 'Organization',           // ADDED
+  'COMPANY': 'Organization',           // ADDED
+  'firm': 'Organization',              // ADDED
+  'Firm': 'Organization',              // ADDED
+  'FIRM': 'Organization',              // ADDED
+  
+  // Country variations
+  'country': 'Country',
+  'COUNTRY': 'Country',
+  
+  // State variations  
+  'state': 'State',
+  'STATE': 'State',
+  'city': 'State',
+  'City': 'State',
+  'district': 'State',
+  'District': 'State',
+  'CITY': 'State',
+  'DISTRICT': 'State',       // ADDED
+  'location': 'State',       // ADDED
+  'Location': 'State',       // ADDED
+  'LOCATION': 'State',       // ADDED
+  
+  // Phone variations
+  'phone': 'Phone',
+  'Phone': 'Phone',
+  'PHONE': 'Phone',
+  'phone_number': 'Phone',
+  'Phone_Number': 'Phone',
+  'PHONE_NUMBER': 'Phone',
+  'phonenumber': 'Phone',
+  'PhoneNumber': 'Phone',
+  'PHONENUMBER': 'Phone',
+  'mobile': 'Phone',
+  'Mobile': 'Phone',
+  'MOBILE': 'Phone',
+  'mobile_number': 'Phone',
+  'Mobile_Number': 'Phone',
+  'MOBILE_NUMBER': 'Phone',
+  'MOBILE NUMBER': 'Phone',
+  'Mobile Number': 'Phone',
+  'mobile number': 'Phone',
+  'contact': 'Phone',
+  'Contact': 'Phone',
+  'CONTACT': 'Phone',
+  'phone number': 'Phone',
+  'Phone Number': 'Phone',
+  'contactnumber': 'Phone',    // ADDED
+  'ContactNumber': 'Phone',    // ADDED
+  'CONTACTNUMBER': 'Phone',    // ADDED
+  'contact_number': 'Phone',   // ADDED
+  'Contact_Number': 'Phone',   // ADDED
+  'CONTACT_NUMBER': 'Phone',   // ADDED
+  
+  // Email variations
+  'email': 'Email',
+  'EMAIL': 'Email',
+  'email_address': 'Email',
+  'Email_Address': 'Email',    // ADDED
+  'EMAIL_ADDRESS': 'Email',    // ADDED
+  'emailaddress': 'Email',     // ADDED
+  'EmailAddress': 'Email',     // ADDED
+  'EMAILADDRESS': 'Email',     // ADDED
+  'e-mail': 'Email',           // ADDED
+  'E-mail': 'Email',           // ADDED
+  'E-MAIL': 'Email',           // ADDED
+  'mail': 'Email',             // ADDED
+  'Mail': 'Email',             // ADDED
+  'MAIL': 'Email',             // ADDED
+  
+  // Source variations
+  'source': 'Source',
+  'SOURCE': 'Source',
+  'lead_source': 'Source',     // ADDED
+  'Lead_Source': 'Source',     // ADDED
+  'LEAD_SOURCE': 'Source',     // ADDED
+  'leadsource': 'Source',      // ADDED
+  'LeadSource': 'Source',      // ADDED
+  'LEADSOURCE': 'Source',      // ADDED
+  
+  // Temperature variations
+  'Temperature': 'temperature',
+  'TEMPERATURE': 'temperature',
+  'temp': 'temperature',       // ADDED
+  'Temp': 'temperature',       // ADDED
+  'TEMP': 'temperature',       // ADDED
+  
+  // Status variations
+  'Status': 'status',
+  'STATUS': 'status',
+  'lead_status': 'status',     // ADDED
+  'Lead_Status': 'status',     // ADDED
+  'LEAD_STATUS': 'status',     // ADDED
+  'leadstatus': 'status',      // ADDED
+  'LeadStatus': 'status',      // ADDED
+  'LEADSTATUS': 'status',      // ADDED
+  
+  // Timestamp variations
+  'Timestamp': 'timestamp',
+  'TIMESTAMP': 'timestamp',
+  'time_stamp': 'timestamp',
+  'Time_Stamp': 'timestamp',   // ADDED
+  'TIME_STAMP': 'timestamp',   // ADDED
+  'timestamp': 'timestamp',    // ADDED (lowercase)
+  'date': 'timestamp',         // ADDED
+  'Date': 'timestamp',         // ADDED
+  'DATE': 'timestamp',         // ADDED
+  
+  // Created at variations
+  'created_at': 'created_at',
+  'Created_At': 'created_at',
+  'CREATED_AT': 'created_at',
+  'createdAt': 'created_at',
+  'CreatedAt': 'created_at',   // ADDED
+  'CREATEDAT': 'created_at',   // ADDED
+  'created': 'created_at',     // ADDED
+  'Created': 'created_at',     // ADDED
+  'CREATED': 'created_at',     // ADDED
+  'date_created': 'created_at', // ADDED
+  'Date_Created': 'created_at', // ADDED
+  'DATE_CREATED': 'created_at', // ADDED
+  
+  // Status updated at variations
+  'status_updated_at': 'status_updated_at',
+  'Status_Updated_At': 'status_updated_at',
+  'STATUS_UPDATED_AT': 'status_updated_at',
+  'statusUpdatedAt': 'status_updated_at',
+  'StatusUpdatedAt': 'status_updated_at',  // ADDED
+  'STATUSUPDATEDAT': 'status_updated_at',  // ADDED
+  'last_updated': 'status_updated_at',     // ADDED
+  'Last_Updated': 'status_updated_at',     // ADDED
+  'LAST_UPDATED': 'status_updated_at',     // ADDED
+  'updated_at': 'status_updated_at',       // ADDED
+  'Updated_At': 'status_updated_at',       // ADDED
+  'UPDATED_AT': 'status_updated_at',       // ADDED
+  
+  // Courses attended variations
+  'courses_attended': 'coursesAttended',
+  'Courses_Attended': 'coursesAttended',
+  'COURSES_ATTENDED': 'coursesAttended',
+  'courses attended': 'coursesAttended',
+  'Courses Attended': 'coursesAttended',   // ADDED
+  'COURSES ATTENDED': 'coursesAttended',   // ADDED
+  'coursesattended': 'coursesAttended',    // ADDED
+  'CoursesAttended': 'coursesAttended',    // ADDED
+  'COURSESATTENDED': 'coursesAttended',    // ADDED
+  
+  // Referrals variations
+  'Referrals': 'referrals',
+  'REFERRALS': 'referrals',
+  'referrals': 'referrals',    // ADDED (lowercase)
+  'referral': 'referrals',     // ADDED
+  'Referral': 'referrals',     // ADDED
+  'REFERRAL': 'referrals',     // ADDED
+  
+  // Numeric field variations
+  'Recency': 'recency',
+  'RECENCY': 'recency',
+  'recency': 'recency',        // ADDED (lowercase)
+  'Frequency': 'frequency',
+  'FREQUENCY': 'frequency',
+  'frequency': 'frequency',    // ADDED (lowercase)
+  'Monetary': 'monetary',
+  'MONETARY': 'monetary',
+  'monetary': 'monetary',      // ADDED (lowercase)
+  'Score': 'score',
+  'SCORE': 'score',
+  'score': 'score',            // ADDED (lowercase)
+  
+  // Classification variations
+  'Classification': 'classification',
+  'CLASSIFICATION': 'classification',
+  'classification': 'classification',  // ADDED (lowercase)
+  'class': 'classification',           // ADDED
+  'Class': 'classification',           // ADDED
+  'CLASS': 'classification',           // ADDED
+  'category': 'classification',        // ADDED
+  'Category': 'classification',        // ADDED
+  'CATEGORY': 'classification',        // ADDED
+  
+  // Next course variations
+  'next_course': 'next_course',
+  'Next_Course': 'next_course',
+  'NEXT_COURSE': 'next_course',
+  'nextCourse': 'next_course',
+  'NextCourse': 'next_course', // ADDED
+  'NEXTCOURSE': 'next_course', // ADDED
+  'next course': 'next_course', // ADDED
+  'Next Course': 'next_course', // ADDED
+  'NEXT COURSE': 'next_course'  // ADDED
+};
 
   const normalizeHeaders = (headers) => {
     return headers.map(header => {
       const trimmed = header.trim();
       return headerNormalization[trimmed] || trimmed;
+    });
+  };
+
+  const normalizeRowData = (data) => {
+    return data.map((row, rowIndex) => {
+      const normalizedRow = {};
+      
+      // Iterate through each key-value pair in the row
+      Object.keys(row).forEach(originalKey => {
+        const trimmedKey = originalKey.trim();
+        const normalizedKey = headerNormalization[trimmedKey] || trimmedKey;
+        normalizedRow[normalizedKey] = row[originalKey];
+        
+        // Debug logging for phone-related fields
+        if (rowIndex === 0 && (trimmedKey.toLowerCase().includes('phone') || trimmedKey.toLowerCase().includes('mobile'))) {
+          console.log(`Phone mapping: "${trimmedKey}" -> "${normalizedKey}"`);
+        }
+      });
+      
+      return normalizedRow;
     });
   };
 
@@ -510,18 +644,17 @@ const CSVUploader = ({ tableName = 'mock' }) => {
       skipEmptyLines: true,
       complete: async function (results) {
         try {
-          const normalizedHeaders = normalizeHeaders(results.meta.fields);
+          console.log('Original headers:', results.meta.fields);
+          console.log('Sample original data:', results.data.slice(0, 2));
           
-          const normalizedData = results.data.map(row => {
-            const newRow = {};
-            Object.keys(row).forEach((key, index) => {
-              const normalizedKey = normalizedHeaders[index];
-              newRow[normalizedKey] = row[key];
-            });
-            return newRow;
-          });
-
+          // Normalize the data by mapping the headers correctly
+          const normalizedData = normalizeRowData(results.data);
+          
+          console.log('Sample normalized data:', normalizedData.slice(0, 2));
+          
           const cleanedData = normalizedData.map(validateAndCleanData);
+          
+          console.log('Sample cleaned data:', cleanedData.slice(0, 2));
           
           const duplicateErrors = await checkAllDuplicates(cleanedData);
           
@@ -720,39 +853,76 @@ const Form = () => {
     register,
     handleSubmit,
     formState: { errors },
-    reset
-  } = useForm();
+    reset,
+    setFocus,
+  } = useForm({
+    mode: 'onTouched'
+  });
 
   const [coursesAttended, setCoursesAttended] = useState([""]);
   const [referrals, setReferrals] = useState([""]);
- 
- 
-  async function insertLeadRow(newLead) {
-  const { data, error } = await supabase
-    .from("mock")
-    .insert([newLead]) // Insert a single row (or multiple rows as an array)
+  const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const messageRef = useRef(null);
 
-  if (error) {
-    console.error("Error inserting row:", error.message);
-    return;
+  useEffect(() => {
+    if (successMessage || errorMessage) {
+      messageRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [successMessage, errorMessage]);
+
+  async function insertLeadRow(newLead) {
+    const { data, error } = await supabase.from("mock").insert([newLead]);
+    if (error) {
+      console.log('Supabase insert error:', error);
+      let msg = "Error inserting row: " + error.message;
+      if (error.message.toLowerCase().includes('unique') || error.message.toLowerCase().includes('duplicate')) {
+        if (error.message.toLowerCase().includes('email')) {
+          msg = `Email "${newLead.Email}" already exists in database.`;
+        } else if (error.message.toLowerCase().includes('phone')) {
+          msg = `Phone "${newLead.Phone}" already exists in database.`;
+        }
+      }
+      setErrorMessage(msg);
+      setSuccessMessage("");
+      setTimeout(() => {
+        messageRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+      return false;
+    }
+    setSuccessMessage("Lead inserted successfully!");
+    setErrorMessage("");
+    reset();
+    setTimeout(() => {
+      messageRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+    return true;
   }
 
-  console.log("Row inserted successfully:", data);
-}
-
-  const onSubmit = (data) => {
-    // Filter out empty strings from arrays
+  const onSubmit = async (data) => {
     const filteredCourses = coursesAttended.filter(course => course.trim() !== "");
     const filteredReferrals = referrals.filter(referral => referral.trim() !== "");
-    
     const finalData = {
       ...data,
       coursesAttended: filteredCourses,
       referrals: filteredReferrals
     };
-    
-    insertLeadRow(finalData);
-    reset();
+    const success = await insertLeadRow(finalData);
+    if (success) {
+      // Scroll to success message after reset
+      setTimeout(() => {
+        messageRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+    }
+  };
+
+  // Universal error handler for required fields
+  const onError = (errors) => {
+    const firstErrorField = Object.keys(errors)[0];
+    if (firstErrorField) {
+      setFocus(firstErrorField);
+      setErrorMessage(errors[firstErrorField].message || "Please fill all required fields.");
+    }
   };
 
   const addCourseField = () => {
@@ -845,7 +1015,17 @@ const Form = () => {
         </Box>
 
         <Box sx={{ px: 5, py: 4 }}>
-          <form onSubmit={handleSubmit(onSubmit)} noValidate>
+          {(successMessage || errorMessage) && (
+            <Alert
+              ref={messageRef}
+              severity={successMessage ? "success" : "error"}
+              sx={{ mb: 3 }}
+              aria-live="polite"
+            >
+              {successMessage || errorMessage}
+            </Alert>
+          )}
+          <form onSubmit={handleSubmit(onSubmit, onError)} noValidate>
             
             {/* Personal Information Section */}
             <Box sx={{ mb: 5 }}>
@@ -937,8 +1117,10 @@ const Form = () => {
                 <Grid size={{xs: 12, md: 6}}>
                   <TextField
                     fullWidth
-                    label="Job Title"
-                    {...register("JobTitle")}
+                    label="Phone Number"
+                    {...register("Phone", { required: "Phone is required" })}
+                    error={!!errors.Phone}
+                    helperText={errors.Phone?.message}
                     sx={{
                       '& .MuiOutlinedInput-root': {
                         backgroundColor: 'white',
@@ -963,8 +1145,8 @@ const Form = () => {
                 <Grid size={{xs: 12, md: 6}}>
                   <TextField
                     fullWidth
-                    label="Phone Number"
-                    {...register("Phone")}
+                    label="Job Title"
+                    {...register("JobTitle")}
                     sx={{
                       '& .MuiOutlinedInput-root': {
                         backgroundColor: 'white',
@@ -1200,55 +1382,57 @@ const Form = () => {
                   </Paper>
                 </Grid>
                 <Grid size={{xs: 12, md: 6}}>
-  <Paper
-    elevation={2}
-    sx={{
-      p: 4,
-      borderRadius: 3,
-      backgroundColor: 'rgba(255, 255, 255, 0.8)',
-      border: '1px solid rgba(49, 150, 198, 0.2)',
-      transition: 'all 0.3s ease',
-      '&:hover': {
-        boxShadow: '0 8px 25px rgba(10, 52, 86, 0.15)',
-        transform: 'translateY(-2px)'
-      }
-    }}
-  >
-    <Typography
-      variant="h6"
-      sx={{
-        fontWeight: 600,
-        color: '#0a3456',
-        mb: 2
-      }}
-    >
-      Next Course
-    </Typography>
-    <TextField
-      fullWidth
-      label="Next Course"
-      {...register("next_course")}
-      sx={{
-        '& .MuiOutlinedInput-root': {
-          backgroundColor: 'white',
-          borderRadius: 2,
-          '&:hover .MuiOutlinedInput-notchedOutline': {
-            borderColor: '#3196c6',
-          },
-          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-            borderColor: '#0a3456',
-          }
-        },
-        '& .MuiInputLabel-root.Mui-focused': {
-          color: '#0a3456',
-        },
-        'input': {
-          color: '#0a3456',
-        }
-      }}
-    />
-  </Paper>
-</Grid>
+                  <Paper
+                    elevation={2}
+                    sx={{
+                      p: 4,
+                      borderRadius: 3,
+                      backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                      border: '1px solid rgba(49, 150, 198, 0.2)',
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        boxShadow: '0 8px 25px rgba(10, 52, 86, 0.15)',
+                        transform: 'translateY(-2px)'
+                      }
+                    }}
+                  >
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        fontWeight: 600,
+                        color: '#0a3456',
+                        mb: 2
+                      }}
+                    >
+                      Next Course
+                    </Typography>
+                    <TextField
+                      fullWidth
+                      label="Next Course"
+                      {...register("next_course", { required: "Next course is required" })}
+                      error={!!errors.next_course}
+                      helperText={errors.next_course?.message}
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          backgroundColor: 'white',
+                          borderRadius: 2,
+                          '&:hover .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#3196c6',
+                          },
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#0a3456',
+                          }
+                        },
+                        '& .MuiInputLabel-root.Mui-focused': {
+                          color: '#0a3456',
+                        },
+                        'input': {
+                          color: '#0a3456',
+                        }
+                      }}
+                    />
+                  </Paper>
+                </Grid>
 
 
                 {/* Referrals */}
@@ -1389,9 +1573,9 @@ const Form = () => {
                         name="temperature"
                         control={control}
                         defaultValue=""
-                        rules={{required: 'Please Select An Option'}}
+                        rules={{ required: 'Please select a temperature' }}
                         render={({ field }) => (
-                          <RadioGroup column {...field}>
+                          <RadioGroup row {...field}>
                             <FormControlLabel 
                               value="Hot" 
                               control={<Radio sx={{ color: '#e85f5c', '&.Mui-checked': { color: '#e85f5c' } }} />} 
@@ -1435,8 +1619,9 @@ const Form = () => {
                       name="status"
                       control={control}
                       defaultValue=""
+                      rules={{ required: 'Please select a status' }}
                       render={({ field }) => (
-                        <FormControl fullWidth>
+                        <FormControl fullWidth error={!!errors.status}>
                           <InputLabel 
                             id="status"
                             sx={{ 
@@ -1497,7 +1682,9 @@ const Form = () => {
                     <TextField
                       fullWidth
                       label="Source"
-                      {...register("Source")}
+                      {...register("Source", { required: "Source is required" })}
+                      error={!!errors.Source}
+                      helperText={errors.Source?.message}
                       sx={{
                         '& .MuiOutlinedInput-root': {
                           backgroundColor: 'white',
