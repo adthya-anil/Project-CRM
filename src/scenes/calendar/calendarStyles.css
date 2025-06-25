@@ -180,12 +180,12 @@
 
 .MuiListItemText-primary {
   font-weight: 500 !important;
-  color: var(--list-primary-text, #2c3e50) !important;
+  color: var(--list-primary-text, #0a3456) !important;
   margin-bottom: 4px !important;
 }
 
 .MuiListItemText-secondary {
-  color: var(--list-secondary-text, #6c757d) !important;
+  color: var(--list-secondary-text, #0a3456) !important;
   font-size: 0.875rem !important;
 }
 
