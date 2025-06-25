@@ -47,7 +47,8 @@ serve(async (req) => {
     });
 
     // Check if the message contains "interested" (case insensitive)
-    const isInterested = messageBody.toLowerCase().includes("interested");
+    const isInterested = /(?:\binterested\b|\byes\b|\bok\b|\bs\b)/i.test(messageBody);
+
     
     if (!isInterested) {
       console.log("Message doesn't contain 'interested', skipping notification");

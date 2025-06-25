@@ -45,265 +45,119 @@ const CSVUploader = ({ tableName = 'mock' }) => {
   ];
 
   // Header normalization mapping
-  const headerNormalization = {
-  // Name variations - FIXED syntax errors (removed spaces before colons)
-  'name': 'Name',
-  'NamE': 'Name',
-  'nAme': 'Name',
-  'NAME': 'Name',
-  'Full Name': 'Name',
-  'FullName': 'Name',        // FIXED: was 'FullName' : 'Name'
-  'full name': 'Name',       // FIXED: was 'full name' : 'Name'
-  'fullname': 'Name',        // FIXED: was 'fullname' : 'Name'
-  'FULL NAME': 'Name',       // ADDED
-  'Full_Name': 'Name',       // ADDED
-  'full_name': 'Name',       // ADDED
-  'FULL_NAME': 'Name',       // ADDED
+// Keyword-based header detection
+const detectHeaderByKeywords = (header) => {
+  // Remove all non-alphanumeric characters and normalize
+  const cleanHeader = header.toLowerCase().trim().replace(/[^a-z]/g, '');
   
-  // JobTitle variations
-  'job title': 'JobTitle',
-  'jobtitle': 'JobTitle',
-  'Jobtitle': 'JobTitle',
-  'JOB_TITLE': 'JobTitle',
-  'job_title': 'JobTitle',
-  'occupation': 'JobTitle',
-  'Occupation': 'JobTitle',
-  'job': 'JobTitle',
-  'Job': 'JobTitle',
-  'Work': 'JobTitle',
-  'work': 'JobTitle',
-  'OCCUPATION': 'JobTitle',
-  'JOB': 'JobTitle',
-  'Job Title': 'JobTitle',   // ADDED
-  'WORK': 'JobTitle',        // ADDED
-  'position': 'JobTitle',    // ADDED
-  'Position': 'JobTitle',    // ADDED
-  'POSITION': 'JobTitle',    // ADDED
+  // Name detection
+  if (cleanHeader.includes('name') || 
+      cleanHeader.includes('fullname') ||
+      cleanHeader.includes('firstname') ||
+      cleanHeader.includes('lastname')) {
+    return 'Name';
+  }
   
-  // Organization variations
-  'organisation': 'Organization',
-  'ORGANISATION': 'Organization',
-  'organization': 'Organization',
-  'ORGANIZATION': 'Organization',
-  'company': 'Organization',           // ADDED
-  'Company': 'Organization',           // ADDED
-  'COMPANY': 'Organization',           // ADDED
-  'firm': 'Organization',              // ADDED
-  'Firm': 'Organization',              // ADDED
-  'FIRM': 'Organization',              // ADDED
+  // Phone detection
+  if (cleanHeader.includes('phone') || cleanHeader.includes('mobile') || 
+      cleanHeader.includes('contact') || cleanHeader.includes('number')) {
+    return 'Phone';
+  }
   
-  // Country variations
-  'country': 'Country',
-  'COUNTRY': 'Country',
+  // Email detection
+  if (cleanHeader.includes('email') || cleanHeader.includes('mail')) {
+    return 'Email';
+  }
   
-  // State variations  
-  'state': 'State',
-  'STATE': 'State',
-  'city': 'State',
-  'City': 'State',
-  'district': 'State',
-  'District': 'State',
-  'CITY': 'State',
-  'DISTRICT': 'State',       // ADDED
-  'location': 'State',       // ADDED
-  'Location': 'State',       // ADDED
-  'LOCATION': 'State',       // ADDED
+  // JobTitle detection
+  if (cleanHeader.includes('job') || cleanHeader.includes('title') || 
+      cleanHeader.includes('occupation') || cleanHeader.includes('position') ||
+      cleanHeader.includes('work') || cleanHeader.includes('role')) {
+    return 'JobTitle';
+  }
   
-  // Phone variations
-  'phone': 'Phone',
-  'Phone': 'Phone',
-  'PHONE': 'Phone',
-  'phone_number': 'Phone',
-  'Phone_Number': 'Phone',
-  'PHONE_NUMBER': 'Phone',
-  'phonenumber': 'Phone',
-  'PhoneNumber': 'Phone',
-  'PHONENUMBER': 'Phone',
-  'mobile': 'Phone',
-  'Mobile': 'Phone',
-  'MOBILE': 'Phone',
-  'mobile_number': 'Phone',
-  'Mobile_Number': 'Phone',
-  'MOBILE_NUMBER': 'Phone',
-  'MOBILE NUMBER': 'Phone',
-  'Mobile Number': 'Phone',
-  'mobile number': 'Phone',
-  'contact': 'Phone',
-  'Contact': 'Phone',
-  'CONTACT': 'Phone',
-  'phone number': 'Phone',
-  'Phone Number': 'Phone',
-  'contactnumber': 'Phone',    // ADDED
-  'ContactNumber': 'Phone',    // ADDED
-  'CONTACTNUMBER': 'Phone',    // ADDED
-  'contact_number': 'Phone',   // ADDED
-  'Contact_Number': 'Phone',   // ADDED
-  'CONTACT_NUMBER': 'Phone',   // ADDED
+  // Organization detection
+  if (cleanHeader.includes('organization') || cleanHeader.includes('organisation') ||
+      cleanHeader.includes('company') || cleanHeader.includes('firm') ||
+      cleanHeader.includes('employer')) {
+    return 'Organization';
+  }
   
-  // Email variations
-  'email': 'Email',
-  'EMAIL': 'Email',
-  'email_address': 'Email',
-  'Email_Address': 'Email',    // ADDED
-  'EMAIL_ADDRESS': 'Email',    // ADDED
-  'emailaddress': 'Email',     // ADDED
-  'EmailAddress': 'Email',     // ADDED
-  'EMAILADDRESS': 'Email',     // ADDED
-  'e-mail': 'Email',           // ADDED
-  'E-mail': 'Email',           // ADDED
-  'E-MAIL': 'Email',           // ADDED
-  'mail': 'Email',             // ADDED
-  'Mail': 'Email',             // ADDED
-  'MAIL': 'Email',             // ADDED
+  // State detection
+  if (cleanHeader.includes('state') || cleanHeader.includes('city') ||
+      cleanHeader.includes('district') || cleanHeader.includes('location') ||
+      cleanHeader.includes('region')) {
+    return 'State';
+  }
   
-  // Source variations
-  'source': 'Source',
-  'SOURCE': 'Source',
-  'lead_source': 'Source',     // ADDED
-  'Lead_Source': 'Source',     // ADDED
-  'LEAD_SOURCE': 'Source',     // ADDED
-  'leadsource': 'Source',      // ADDED
-  'LeadSource': 'Source',      // ADDED
-  'LEADSOURCE': 'Source',      // ADDED
+  // Country detection
+  if (cleanHeader.includes('country') || cleanHeader.includes('nation')) {
+    return 'Country';
+  }
   
-  // Temperature variations
-  'Temperature': 'temperature',
-  'TEMPERATURE': 'temperature',
-  'temp': 'temperature',       // ADDED
-  'Temp': 'temperature',       // ADDED
-  'TEMP': 'temperature',       // ADDED
+  // Source detection
+  if (cleanHeader.includes('source') || cleanHeader.includes('lead')) {
+    return 'Source';
+  }
   
-  // Status variations
-  'Status': 'status',
-  'STATUS': 'status',
-  'lead_status': 'status',     // ADDED
-  'Lead_Status': 'status',     // ADDED
-  'LEAD_STATUS': 'status',     // ADDED
-  'leadstatus': 'status',      // ADDED
-  'LeadStatus': 'status',      // ADDED
-  'LEADSTATUS': 'status',      // ADDED
+  // Temperature detection
+  if (cleanHeader.includes('temp') || cleanHeader.includes('temperature')) {
+    return 'temperature';
+  }
   
-  // Timestamp variations
-  'Timestamp': 'timestamp',
-  'TIMESTAMP': 'timestamp',
-  'time_stamp': 'timestamp',
-  'Time_Stamp': 'timestamp',   // ADDED
-  'TIME_STAMP': 'timestamp',   // ADDED
-  'timestamp': 'timestamp',    // ADDED (lowercase)
-  'date': 'timestamp',         // ADDED
-  'Date': 'timestamp',         // ADDED
-  'DATE': 'timestamp',         // ADDED
+  // Status detection
+  if (cleanHeader.includes('status')) {
+    return 'status';
+  }
   
-  // Created at variations
-  'created_at': 'created_at',
-  'Created_At': 'created_at',
-  'CREATED_AT': 'created_at',
-  'createdAt': 'created_at',
-  'CreatedAt': 'created_at',   // ADDED
-  'CREATEDAT': 'created_at',   // ADDED
-  'created': 'created_at',     // ADDED
-  'Created': 'created_at',     // ADDED
-  'CREATED': 'created_at',     // ADDED
-  'date_created': 'created_at', // ADDED
-  'Date_Created': 'created_at', // ADDED
-  'DATE_CREATED': 'created_at', // ADDED
+  // Timestamp detection
+  if (cleanHeader.includes('time') || cleanHeader.includes('date') ||
+      cleanHeader.includes('stamp')) {
+    return 'timestamp';
+  }
   
-  // Status updated at variations
-  'status_updated_at': 'status_updated_at',
-  'Status_Updated_At': 'status_updated_at',
-  'STATUS_UPDATED_AT': 'status_updated_at',
-  'statusUpdatedAt': 'status_updated_at',
-  'StatusUpdatedAt': 'status_updated_at',  // ADDED
-  'STATUSUPDATEDAT': 'status_updated_at',  // ADDED
-  'last_updated': 'status_updated_at',     // ADDED
-  'Last_Updated': 'status_updated_at',     // ADDED
-  'LAST_UPDATED': 'status_updated_at',     // ADDED
-  'updated_at': 'status_updated_at',       // ADDED
-  'Updated_At': 'status_updated_at',       // ADDED
-  'UPDATED_AT': 'status_updated_at',       // ADDED
+  // Created at detection
+  if (cleanHeader.includes('created')) {
+    return 'created_at';
+  }
   
-  // Courses attended variations
-  'courses_attended': 'coursesAttended',
-  'Courses_Attended': 'coursesAttended',
-  'COURSES_ATTENDED': 'coursesAttended',
-  'courses attended': 'coursesAttended',
-  'Courses Attended': 'coursesAttended',   // ADDED
-  'COURSES ATTENDED': 'coursesAttended',   // ADDED
-  'coursesattended': 'coursesAttended',    // ADDED
-  'CoursesAttended': 'coursesAttended',    // ADDED
-  'COURSESATTENDED': 'coursesAttended',    // ADDED
+  // Updated at detection
+  if (cleanHeader.includes('updated') || cleanHeader.includes('modified')) {
+    return 'status_updated_at';
+  }
   
-  // Referrals variations
-  'Referrals': 'referrals',
-  'REFERRALS': 'referrals',
-  'referrals': 'referrals',    // ADDED (lowercase)
-  'referral': 'referrals',     // ADDED
-  'Referral': 'referrals',     // ADDED
-  'REFERRAL': 'referrals',     // ADDED
+  // Courses detection
+  if (cleanHeader.includes('course') || cleanHeader.includes('training') ||
+      cleanHeader.includes('attended')) {
+    return 'coursesAttended';
+  }
   
-  // Numeric field variations
-  'Recency': 'recency',
-  'RECENCY': 'recency',
-  'recency': 'recency',        // ADDED (lowercase)
-  'Frequency': 'frequency',
-  'FREQUENCY': 'frequency',
-  'frequency': 'frequency',    // ADDED (lowercase)
-  'Monetary': 'monetary',
-  'MONETARY': 'monetary',
-  'monetary': 'monetary',      // ADDED (lowercase)
-  'Score': 'score',
-  'SCORE': 'score',
-  'score': 'score',            // ADDED (lowercase)
+  // Referrals detection
+  if (cleanHeader.includes('referral') || cleanHeader.includes('refer')) {
+    return 'referrals';
+  }
   
-  // Classification variations
-  'Classification': 'classification',
-  'CLASSIFICATION': 'classification',
-  'classification': 'classification',  // ADDED (lowercase)
-  'class': 'classification',           // ADDED
-  'Class': 'classification',           // ADDED
-  'CLASS': 'classification',           // ADDED
-  'category': 'classification',        // ADDED
-  'Category': 'classification',        // ADDED
-  'CATEGORY': 'classification',        // ADDED
+  // RFM fields detection
+  if (cleanHeader.includes('recency')) return 'recency';
+  if (cleanHeader.includes('frequency')) return 'frequency';
+  if (cleanHeader.includes('monetary')) return 'monetary';
+  if (cleanHeader.includes('score')) return 'score';
   
-  // Next course variations
-  'next_course': 'next_course',
-  'Next_Course': 'next_course',
-  'NEXT_COURSE': 'next_course',
-  'nextCourse': 'next_course',
-  'NextCourse': 'next_course', // ADDED
-  'NEXTCOURSE': 'next_course', // ADDED
-  'next course': 'next_course', // ADDED
-  'Next Course': 'next_course', // ADDED
-  'NEXT COURSE': 'next_course'  // ADDED
+  // Classification detection
+  if (cleanHeader.includes('class') || cleanHeader.includes('category') ||
+      cleanHeader.includes('type') || cleanHeader.includes('segment')) {
+    return 'classification';
+  }
+  
+  // Next course detection
+  if (cleanHeader.includes('next') && cleanHeader.includes('course')) {
+    return 'next_course';
+  }
+  
+  // If no keywords match, return original header
+  return header;
 };
 
-  const normalizeHeaders = (headers) => {
-    return headers.map(header => {
-      const trimmed = header.trim();
-      return headerNormalization[trimmed] || trimmed;
-    });
-  };
-
-  const normalizeRowData = (data) => {
-    return data.map((row, rowIndex) => {
-      const normalizedRow = {};
-      
-      // Iterate through each key-value pair in the row
-      Object.keys(row).forEach(originalKey => {
-        const trimmedKey = originalKey.trim();
-        const normalizedKey = headerNormalization[trimmedKey] || trimmedKey;
-        normalizedRow[normalizedKey] = row[originalKey];
-        
-        // Debug logging for phone-related fields
-        if (rowIndex === 0 && (trimmedKey.toLowerCase().includes('phone') || trimmedKey.toLowerCase().includes('mobile'))) {
-          console.log(`Phone mapping: "${trimmedKey}" -> "${normalizedKey}"`);
-        }
-      });
-      
-      return normalizedRow;
-    });
-  };
 
   const convertISTToUTC = (istDateString) => {
     if (!istDateString || istDateString === 'null' || istDateString === '') {
@@ -640,17 +494,24 @@ const CSVUploader = ({ tableName = 'mock' }) => {
     setErrors([]);
 
     Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: async function (results) {
-        try {
-          console.log('Original headers:', results.meta.fields);
-          console.log('Sample original data:', results.data.slice(0, 2));
-          
-          // Normalize the data by mapping the headers correctly
-          const normalizedData = normalizeRowData(results.data);
-          
-          console.log('Sample normalized data:', normalizedData.slice(0, 2));
+  header: true,
+  skipEmptyLines: true,
+  transformHeader: (header) => {
+    // Normalize headers during parsing
+    const detectedHeader = detectHeaderByKeywords(header);
+    console.log(`Header mapping: "${header}" -> "${detectedHeader}"`);
+    return detectedHeader;
+  },
+  complete: async function (results) {
+    try {
+      
+      console.log('Normalized headers:', results.meta.fields);
+      console.log('Sample parsed data:', results.data.slice(0, 2));
+      
+      // Data is already normalized by transformHeader
+      const normalizedData = results.data;
+      
+      console.log('Sample normalized data:', normalizedData.slice(0, 2));
           
           const cleanedData = normalizedData.map(validateAndCleanData);
           

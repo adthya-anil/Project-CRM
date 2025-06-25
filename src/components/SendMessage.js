@@ -19,7 +19,7 @@ export async function sendWhatsAppMessage(to, message, mediaUrl = null) {
   });
 
   const response = await fetch(
-    "http://localhost:54321/functions/v1/send-whatsapp", // replace with production URL
+    "https://veotktsrwgnjbuuatfyw.supabase.co/functions/v1/send-whatsapp", // replace with production URL
     {
       method: "POST",
       headers: {

@@ -95,7 +95,7 @@ const Dashboard = ({ isDashboard = true, isAdmin }) => {
               <div className="dashboard-task-item" key={task.id}>
                 <Typography variant="h6">{task.title}</Typography>
                 <Typography variant="body2">
-                  📅 {format(new Date(task.start_time), "PPP")} at {format(new Date(task.start_time), "p")}
+                  📅 {format(new Date(task.start_time), "PPP")}
                 </Typography>
               </div>
             ))}

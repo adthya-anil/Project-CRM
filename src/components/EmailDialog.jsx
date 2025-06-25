@@ -69,9 +69,25 @@ const EmailDialog = ({ open, onClose, selectedRecipients = [] }) => {
       })
     };
 
-    const res = await supabase.functions.invoke('send-bulk-email', {
-      body: payload
-    });
+    const {
+  data: { session },
+  error: sessionError
+} = await supabase.auth.getSession();
+
+if (sessionError || !session?.access_token) {
+  setError("You must be logged in to send emails.");
+  return;
+}
+
+const accessToken = session.access_token;
+
+const res = await supabase.functions.invoke('send-bulk-email', {
+  body: payload,
+  headers: {
+    Authorization: `Bearer ${accessToken}`
+  }
+});
+
 
     // Always check res.error first
     if (res.error) {
