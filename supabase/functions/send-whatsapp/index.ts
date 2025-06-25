@@ -3,7 +3,7 @@ import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 
 serve(async (req) => {
   const corsHeaders = {
-    "Access-Control-Allow-Origin": "https://crm.safetycatch.in",
+    "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
     "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
     "Content-Type": "application/json",
@@ -14,7 +14,13 @@ serve(async (req) => {
   }
 
   try {
-    const { to, message, contentSid, contentVariables, mediaUrl } = await req.json();
+    const { 
+      to, 
+      contentSid, 
+      contentVariables, 
+      body, // For freeform messages
+      messageType = "template" // "template" or "freeform"
+    } = await req.json();
 
     const authHeader = req.headers.get("Authorization");
     const apiKey = req.headers.get("apikey");
@@ -28,18 +34,21 @@ serve(async (req) => {
 
     const accountSid = Deno.env.get("TWILIO_ACCOUNT_SID");
     const authToken = Deno.env.get("TWILIO_AUTH_TOKEN");
-    const whatsappNumber = Deno.env.get("TWILIO_WHATSAPP_NUMBER");
     const messagingServiceSid = Deno.env.get("TWILIO_MESSAGING_SERVICE_SID");
+    const whatsappNumber = Deno.env.get("TWILIO_WHATSAPP_NUMBER"); // For freeform messages
 
-    if (!accountSid || !authToken || !whatsappNumber) {
-      return new Response(JSON.stringify({ error: "Missing Twilio credentials" }), {
+    if (!accountSid || !authToken) {
+      return new Response(JSON.stringify({ 
+        error: "Missing Twilio credentials. Account SID and Auth Token are required" 
+      }), {
         status: 500,
         headers: corsHeaders,
       });
     }
 
+    // Validate required parameters
     if (!to) {
-      return new Response(JSON.stringify({ error: "Missing 'to' number" }), {
+      return new Response(JSON.stringify({ error: "Missing 'to' phone number" }), {
         status: 400,
         headers: corsHeaders,
       });
@@ -52,51 +61,99 @@ serve(async (req) => {
     const credentials = btoa(`${accountSid}:${authToken}`);
     const formData = new URLSearchParams();
 
+    // Base parameters
     formData.append("To", `whatsapp:${phoneNumber}`);
 
-    // 🧠 Use template if provided
-    if (contentSid) {
-      formData.append("ContentSid", contentSid);
-
-      // Always use MessagingServiceSid for templates if available
-      if (messagingServiceSid) {
-        formData.append("MessagingServiceSid", messagingServiceSid);
-      } else {
-        formData.append("From", `whatsapp:${whatsappNumber}`);
+    if (messageType === "template") {
+      // TEMPLATE MESSAGE LOGIC
+      if (!contentSid) {
+        return new Response(JSON.stringify({ 
+          error: "Missing 'contentSid'. Template ContentSid is required for WhatsApp template messages" 
+        }), {
+          status: 400,
+          headers: corsHeaders,
+        });
       }
 
-      // Handle template contentVariables
-      if (contentVariables) {
-        if (typeof contentVariables === "object") {
-          // Ensure contentVariables is properly formatted
-          const contentVariablesString = JSON.stringify(contentVariables);
-          console.log("Template contentVariables:", contentVariablesString);
-          formData.append("contentVariables", contentVariablesString);
-        } else {
-          return new Response(JSON.stringify({ error: "Template contentVariables must be an object" }), {
-            status: 400,
-            headers: corsHeaders,
-          });
+      if (!messagingServiceSid) {
+        return new Response(JSON.stringify({ 
+          error: "Missing 'messagingServiceSid'. Messaging Service SID is required for template messages" 
+        }), {
+          status: 500,
+          headers: corsHeaders,
+        });
+      }
+
+      // Validate ContentSid format
+      if (!contentSid.startsWith('HX')) {
+        return new Response(JSON.stringify({ 
+          error: "Invalid ContentSid format. ContentSid should start with 'HX'" 
+        }), {
+          status: 400,
+          headers: corsHeaders,
+        });
+      }
+
+      formData.append("ContentSid", contentSid);
+      formData.append("MessagingServiceSid", messagingServiceSid);
+
+      // Handle template variables
+      if (contentVariables && typeof contentVariables === "object" && contentVariables !== null) {
+        const validVariables = {};
+        for (const [key, value] of Object.entries(contentVariables)) {
+          if (typeof key === "string" && value !== undefined && value !== null) {
+            validVariables[key] = String(value);
+          }
+        }
+        
+        if (Object.keys(validVariables).length > 0) {
+          formData.append("ContentVariables", JSON.stringify(validVariables));
         }
       }
 
-    } else if (message) {
-      // ✅ Fallback to freeform message
-      formData.append("From", `whatsapp:${whatsappNumber}`);
-      formData.append("Body", message);
-      if (mediaUrl?.trim()) {
-        formData.append("MediaUrl", mediaUrl.trim());
+      console.log("Sending WhatsApp template:", {
+        to: `whatsapp:${phoneNumber}`,
+        contentSid,
+        contentVariables: contentVariables || null
+      });
+
+    } else if (messageType === "freeform") {
+      // FREEFORM MESSAGE LOGIC
+      if (!body) {
+        return new Response(JSON.stringify({ 
+          error: "Missing 'body'. Message body is required for freeform messages" 
+        }), {
+          status: 400,
+          headers: corsHeaders,
+        });
       }
+
+      if (!whatsappNumber) {
+        return new Response(JSON.stringify({ 
+          error: "Missing 'whatsappNumber'. WhatsApp sender number is required for freeform messages" 
+        }), {
+          status: 500,
+          headers: corsHeaders,
+        });
+      }
+
+      formData.append("From", whatsappNumber);
+      formData.append("Body", body);
+
+      console.log("Sending WhatsApp freeform message:", {
+        to: `whatsapp:${phoneNumber}`,
+        from: whatsappNumber,
+        body: body.substring(0, 100) + (body.length > 100 ? "..." : "")
+      });
+
     } else {
-      return new Response(JSON.stringify({
-        error: "Either 'message' or 'contentSid' must be provided"
+      return new Response(JSON.stringify({ 
+        error: "Invalid messageType. Must be 'template' or 'freeform'" 
       }), {
         status: 400,
         headers: corsHeaders,
       });
     }
-
-    console.log("Sending to Twilio with data:", Object.fromEntries(formData.entries()));
 
     // Send to Twilio
     const twilioResponse = await fetch(twilioUrl, {
@@ -114,19 +171,50 @@ serve(async (req) => {
     if (twilioResponse.ok) {
       return new Response(JSON.stringify({
         success: true,
-        message: "WhatsApp message sent successfully",
+        message: `WhatsApp ${messageType} message sent successfully`,
         messageId: twilioResult.sid,
         to: phoneNumber,
-        type: contentSid ? "template" : "freeform",
-        usedcontentSid: contentSid || null,
-        response: twilioResult,
+        type: messageType,
+        ...(messageType === "template" && { 
+          contentSid, 
+          contentVariables: contentVariables || null,
+          messagingServiceSid 
+        }),
+        ...(messageType === "freeform" && { 
+          body,
+          from: whatsappNumber 
+        }),
+        response: {
+          sid: twilioResult.sid,
+          status: twilioResult.status,
+          direction: twilioResult.direction,
+          dateCreated: twilioResult.date_created,
+          dateSent: twilioResult.date_sent,
+          body: twilioResult.body
+        }
       }), { headers: corsHeaders });
     } else {
       console.error("Twilio API error:", twilioResult);
+      
+      // Handle specific errors
+      let errorMessage = `Failed to send WhatsApp ${messageType} message`;
+      if (messageType === "template") {
+        if (twilioResult.code === 63016) {
+          errorMessage = "Template message failed - no active conversation. User may need to initiate contact first.";
+        } else if (twilioResult.code === 63040) {
+          errorMessage = "Template was rejected by WhatsApp. Please check your template approval status.";
+        }
+      } else if (messageType === "freeform") {
+        if (twilioResult.code === 63016) {
+          errorMessage = "Freeform message failed - no active conversation window. User must message you within 24 hours to receive freeform messages.";
+        }
+      }
+
       return new Response(JSON.stringify({
-        error: "Failed to send WhatsApp message",
+        error: errorMessage,
         details: twilioResult,
         statusCode: twilioResponse.status,
+        twilioErrorCode: twilioResult.code || null
       }), {
         status: 400,
         headers: corsHeaders,
@@ -137,7 +225,6 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       error: "Internal server error",
       details: err.message,
-      stack: err.stack,
     }), {
       status: 500,
       headers: corsHeaders,

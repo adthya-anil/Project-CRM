@@ -1,4 +1,3 @@
-// supabase/functions/get-templates/index.ts
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 
 serve(async (_req) => {
@@ -18,15 +17,12 @@ serve(async (_req) => {
     const authToken = Deno.env.get("TWILIO_AUTH_TOKEN");
 
     if (!accountSid || !authToken) {
-      console.error("Missing Twilio credentials");
       return new Response(JSON.stringify({ error: "Missing Twilio credentials" }), {
         status: 500,
         headers: corsHeaders,
       });
     }
 
-    console.log("Fetching templates from Twilio...");
-    
     const twilioUrl = "https://content.twilio.com/v1/Content";
     const authHeader = "Basic " + btoa(`${accountSid}:${authToken}`);
 
@@ -41,7 +37,6 @@ serve(async (_req) => {
     const result = await response.json();
 
     if (!response.ok) {
-      console.error("Twilio API Error:", result);
       return new Response(JSON.stringify({
         error: "Failed to fetch templates",
         details: result,
@@ -49,65 +44,93 @@ serve(async (_req) => {
       }), { status: 400, headers: corsHeaders });
     }
 
-    console.log("Raw Twilio API Response:", JSON.stringify(result, null, 2));
-
     if (!result.contents || !Array.isArray(result.contents)) {
-      console.log("No contents array found in response");
-      return new Response(JSON.stringify({ 
+      return new Response(JSON.stringify({
         templates: [],
-        message: "No contents array found in Twilio response",
+        message: "No templates found",
         rawResponse: result
       }), {
         headers: corsHeaders,
       });
     }
 
-    console.log(`Found ${result.contents.length} total content items`);
+    const templates = result.contents.map((content: any) => {
+      const whatsapp = content.types?.whatsapp || null;
+      const quickReply = content.types?.["twilio/quick-reply"] || null;
+      const text = content.types?.["twilio/text"] || null;
 
-    // Log each content item to understand the structure
-    result.contents.forEach((content: any, index: number) => {
-      console.log(`Content ${index}:`, JSON.stringify(content, null, 2));
+      // Extract template body and variables
+      let body = null;
+      let variables = [];
+      let approvalStatus = null;
+
+      // Check WhatsApp template structure
+      if (whatsapp) {
+        approvalStatus = whatsapp.approval_status;
+        if (whatsapp.body) {
+          body = whatsapp.body;
+          // Extract variables from WhatsApp template body
+          const variableMatches = body.match(/\{\{(\d+)\}\}/g);
+          if (variableMatches) {
+            variables = variableMatches.map((match: string) => match.replace(/[{}]/g, ''));
+          }
+        }
+      }
+
+      // Check Quick Reply template structure
+      if (quickReply) {
+        approvalStatus = approvalStatus || quickReply.approval_status;
+        if (quickReply.body) {
+          body = quickReply.body;
+          // Extract variables from quick reply template
+          const variableMatches = body.match(/\{\{(\w+)\}\}/g);
+          if (variableMatches) {
+            variables = variableMatches.map((match: string) => match.replace(/[{}]/g, ''));
+          }
+        }
+      }
+
+      // Check text template structure
+      if (text && !body) {
+        body = text.body || text.content;
+        if (body) {
+          const variableMatches = body.match(/\{\{(\w+)\}\}/g);
+          if (variableMatches) {
+            variables = variableMatches.map((match: string) => match.replace(/[{}]/g, ''));
+          }
+        }
+      }
+
+      return {
+        sid: content.sid,
+        friendlyName: content.friendly_name || content.name || content.sid,
+        status: content.status || null,
+        approvalStatus: approvalStatus,
+        dateCreated: content.date_created,
+        dateUpdated: content.date_updated,
+        body: body,
+        variables: [...new Set(variables)], // Remove duplicates
+        types: {
+          whatsapp,
+          quickReply,
+          text
+        },
+        raw: content
+      };
     });
 
-    // Filter for WhatsApp templates with more flexible filtering
-    const whatsappContents = result.contents.filter((t: any) => {
-      // Check multiple possible ways WhatsApp templates might be identified
-      const hasWhatsAppType = t.type === "whatsapp" || 
-                             (t.types && t.types.whatsapp) ||
-                             (t.whatsapp);
-      
-      console.log(`Content ${t.sid} has WhatsApp type:`, hasWhatsAppType);
-      return hasWhatsAppType;
-    });
-
-    console.log(`Found ${whatsappContents.length} WhatsApp content items`);
-
-    const templates = result.contents.map((t: any) => {
-  return {
-    sid: t.sid,
-    friendlyName: t.friendly_name || t.name || t.sid,
-    status: t.status,
-    raw: t
-  };
-});
-
-
-    console.log(`Final processed templates:`, templates);
-
-    // Return all templates, even those without body (for debugging)
-    return new Response(JSON.stringify({ 
+    return new Response(JSON.stringify({
       templates,
       debug: {
-        totalContents: result.contents.length,
-        whatsappContents: whatsappContents.length,
-        processedTemplates: templates.length
+        total: result.contents.length,
+        approved: templates.filter(t => t.approvalStatus === 'approved').length,
+        withVariables: templates.filter(t => t.variables && t.variables.length > 0).length
       }
     }), {
       headers: corsHeaders,
     });
 
   } catch (err) {
-    console.error("Function error:", err);
     return new Response(JSON.stringify({
       error: "Internal server error",
       details: err.message,
