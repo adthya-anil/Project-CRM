@@ -284,3 +284,13 @@
   background-color: #287399 !important;
   border-radius: 10px;
 }
+.MuiListItemText-primary
+ {
+    font-weight: 500 !important;
+    color: #0a3456 !important;
+    margin-bottom: 4px !important;
+}
+.MuiListItemText-secondary {
+    color: #2681b4 !important;
+    font-size: .875rem!important;
+}
