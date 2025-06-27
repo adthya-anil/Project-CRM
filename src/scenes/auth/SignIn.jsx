@@ -3,6 +3,7 @@ import { supabase } from "../../../supabaseClient";
 import { useNavigate } from "react-router-dom";
 import "./SignIn.css";
 import logo from '../../assets/react.svg';
+import { Typography } from "@mui/material";
 
 
 function SignIn() {
@@ -144,6 +145,9 @@ function SignIn() {
             >
               Sign In
             </button>
+            <Typography variant="body2" sx={{ mt: 2 }}>
+  <a href="/forgot-password">Forgot Password?</a>
+</Typography>
 
             
           </form>
