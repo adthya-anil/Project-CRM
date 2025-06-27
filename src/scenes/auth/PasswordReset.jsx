@@ -9,7 +9,7 @@ export default function PasswordReset() {
 
   const handleSendReset = async () => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: 'https://localhost:5173/reset-password-confirm',
+      redirectTo: 'https://crm.safetycatch.in/reset-password-confirm',
     });
 
     if (error) {
