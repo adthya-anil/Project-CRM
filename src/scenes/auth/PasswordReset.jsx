@@ -1,11 +1,16 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../../supabaseClient";
 import { Box, Button, TextField, Typography } from "@mui/material";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
+import { InputAdornment, IconButton } from "@mui/material";
+
 
 export default function PasswordReset() {
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState("");
   const [isReady, setIsReady] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
 
   useEffect(() => {
     const checkSession = async () => {
@@ -42,19 +47,35 @@ const handleUpdatePassword = async () => {
         <Typography>{status || "Loading..."}</Typography>
       ) : (
         <>
-          <TextField
-            label="New Password"
-            type="password"
-            fullWidth
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            sx={{ mb: 2 }}
-          />
-          <Button fullWidth variant="contained" onClick={handleUpdatePassword} sx={{color:'white !important'}}>
-            Update Password
-          </Button>
-          {status && <Typography mt={2}>{status}</Typography>}
-        </>
+  <TextField
+    label="New Password"
+    type={showPassword ? "text" : "password"}
+    fullWidth
+    value={password}
+    onChange={(e) => setPassword(e.target.value)}
+    sx={{ mb: 2 }}
+    InputProps={{
+      endAdornment: (
+        <InputAdornment position="end">
+          <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
+            {showPassword ? <VisibilityOff /> : <Visibility />}
+          </IconButton>
+        </InputAdornment>
+      ),
+    }}
+  />
+
+  <Button
+    fullWidth
+    variant="contained"
+    onClick={handleUpdatePassword}
+    sx={{ color: 'white !important' }}
+  >
+    Update Password
+  </Button>
+
+  {status && <Typography mt={2}>{status}</Typography>}
+</>
       )}
     </Box>
   );
