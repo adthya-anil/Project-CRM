@@ -25,6 +25,49 @@ interface EmailLogPayload {
   error_message: string | null;
   metadata?: Record<string, unknown> | null;
   user_id: string | null;
+  attachment_count?: number;
+  attachment_size?: number;
+}
+
+interface EmailAttachment {
+  filename: string;
+  url: string;
+  contentType?: string;
+}
+
+// Helper function to download attachment from URL and convert to Blob
+async function downloadAttachment(attachment: EmailAttachment): Promise<{ blob: Blob; filename: string }> {
+  try {
+    const response = await fetch(attachment.url);
+    if (!response.ok) {
+      throw new Error(`Failed to download ${attachment.filename}: ${response.statusText}`);
+    }
+    
+    const blob = await response.blob();
+    return { blob, filename: attachment.filename };
+  } catch (error) {
+    console.error(`Error downloading attachment ${attachment.filename}:`, error);
+    throw error;
+  }
+}
+
+// Helper function to add attachments to FormData
+async function addAttachmentsToFormData(formData: FormData, attachments: EmailAttachment[]) {
+  if (!attachments || attachments.length === 0) return;
+
+  try {
+    // Download all attachments
+    const downloadPromises = attachments.map(attachment => downloadAttachment(attachment));
+    const downloadedAttachments = await Promise.all(downloadPromises);
+
+    // Add each attachment to FormData
+    downloadedAttachments.forEach(({ blob, filename }) => {
+      formData.append("attachment", blob, filename);
+    });
+  } catch (error) {
+    console.error("Error processing attachments:", error);
+    throw new Error(`Failed to process attachments: ${error.message}`);
+  }
 }
 
 serve(async (req: Request) => {
@@ -51,6 +94,14 @@ serve(async (req: Request) => {
     const emailData = await req.json();
     const recipientVariables: Record<string, unknown> = {};
     const recipientEmails: string[] = [];
+    const attachments: EmailAttachment[] = emailData.attachments || [];
+
+    // Calculate attachment statistics
+    const attachmentCount = attachments.length;
+    const attachmentSize = attachments.reduce((total, att) => {
+      // Estimate size from URL or use a default (since we don't have size in the interface)
+      return total + (att.contentType ? 1024 * 1024 : 0); // Rough estimate
+    }, 0);
 
     for (const recipient of emailData.recipients || []) {
       const email = recipient.email;
@@ -68,8 +119,14 @@ serve(async (req: Request) => {
       template_version: emailData?.templateData?.templateVersion || null,
       status: "sent",
       error_message: null,
-      metadata: emailData.metadata || null,
+      metadata: {
+        ...emailData.metadata,
+        attachment_count: attachmentCount,
+        attachment_filenames: attachments.map(att => att.filename)
+      },
       user_id: userId,
+      attachment_count: attachmentCount,
+      attachment_size: attachmentSize,
     };
 
     // 📧 TEMPLATE MODE
@@ -80,6 +137,29 @@ serve(async (req: Request) => {
       formData.append("from", `${emailData.senderName} <${emailData.senderEmail}>`);
       formData.append("subject", emailData.subject);
       formData.append("template", emailData.templateData.templateName);
+
+      // Add attachments to template emails
+      try {
+        await addAttachmentsToFormData(formData, attachments);
+      } catch (attachmentError) {
+        const errorMessage = attachmentError instanceof Error ? attachmentError.message : String(attachmentError);
+        const errorLog: EmailLogPayload = {
+          ...baseLog,
+          mailgun_message_id: null,
+          status: "failed",
+          error_message: `Attachment processing failed: ${errorMessage}`,
+        };
+        await logToSupabase(errorLog);
+
+        return new Response(
+          JSON.stringify({
+            success: false,
+            recipients_count: 0,
+            error: `Failed to process attachments: ${errorMessage}`,
+          }),
+          { status: 500, headers: corsHeaders }
+        );
+      }
 
       const res = await fetch(`https://api.mailgun.net/v3/${MAILGUN_DOMAIN}/messages`, {
         method: "POST",
@@ -112,6 +192,9 @@ serve(async (req: Request) => {
 
     // ✉️ CUSTOM TEXT EMAIL MODE
     else if (emailData.emailType === "custom" && emailData.customContent) {
+      // For custom emails, we need to send individual emails with attachments
+      const results = [];
+      
       for (const recipient of recipientEmails) {
         const vars = recipientVariables[recipient] as Record<string, string>;
         let personalizedSubject = emailData.subject;
@@ -128,6 +211,26 @@ serve(async (req: Request) => {
         personalForm.append("from", `${emailData.senderName} <${emailData.senderEmail}>`);
         personalForm.append("subject", personalizedSubject);
         personalForm.append("text", personalizedText);
+
+        // Add attachments to each individual email
+        try {
+          await addAttachmentsToFormData(personalForm, attachments);
+        } catch (attachmentError) {
+          const errorMessage = attachmentError instanceof Error ? attachmentError.message : String(attachmentError);
+          const singleErrorLog: EmailLogPayload = {
+            ...baseLog,
+            recipient_count: 1,
+            recipient_emails: [recipient],
+            subject: personalizedSubject,
+            mailgun_message_id: null,
+            status: "failed",
+            error_message: `Attachment processing failed for ${recipient}: ${errorMessage}`,
+          };
+          await logToSupabase(singleErrorLog);
+          
+          results.push({ success: false, recipient, error: errorMessage });
+          continue;
+        }
 
         const res = await fetch(`https://api.mailgun.net/v3/${MAILGUN_DOMAIN}/messages`, {
           method: "POST",
@@ -150,15 +253,21 @@ serve(async (req: Request) => {
         };
 
         await logToSupabase(singleLog);
+        results.push({ success: res.ok, recipient, error: res.ok ? null : result.message });
       }
+
+      const successCount = results.filter(r => r.success).length;
+      const hasErrors = results.some(r => !r.success);
 
       return new Response(
         JSON.stringify({
-          success: true,
-          recipients_count: recipientEmails.length,
-          error: null,
+          success: !hasErrors,
+          recipients_count: successCount,
+          total_recipients: recipientEmails.length,
+          error: hasErrors ? "Some emails failed to send" : null,
+          details: results,
         }),
-        { status: 200, headers: corsHeaders }
+        { status: hasErrors ? 207 : 200, headers: corsHeaders } // 207 Multi-Status for partial success
       );
     }
 
@@ -168,10 +277,12 @@ serve(async (req: Request) => {
       { status: 400, headers: corsHeaders }
     );
   } catch (err) {
+    console.error("Edge function error:", err);
+    const errorMessage = err instanceof Error ? err.message : "Unexpected server error";
     return new Response(
       JSON.stringify({
         success: false,
-        error: (err as Error).message || "Unexpected server error",
+        error: errorMessage,
       }),
       { status: 500, headers: corsHeaders }
     );
@@ -180,14 +291,18 @@ serve(async (req: Request) => {
 
 // 🔁 Helper: insert email log into Supabase
 async function logToSupabase(payload: EmailLogPayload) {
-  await fetch(`${Deno.env.get("SUPABASE_URL")}/rest/v1/email_logs`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      apikey: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-      Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`,
-      Prefer: "return=minimal",
-    },
-    body: JSON.stringify(payload),
-  });
+  try {
+    await fetch(`${Deno.env.get("SUPABASE_URL")}/rest/v1/email_logs`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+        Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`,
+        Prefer: "return=minimal",
+      },
+      body: JSON.stringify(payload),
+    });
+  } catch (error) {
+    console.error("Failed to log to Supabase:", error);
+  }
 }
