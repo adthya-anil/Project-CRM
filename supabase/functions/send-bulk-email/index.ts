@@ -70,6 +70,50 @@ async function addAttachmentsToFormData(formData: FormData, attachments: EmailAt
   }
 }
 
+// Helper function to send a copy to sender
+async function sendSenderCopy(
+  emailData: any,
+  attachments: EmailAttachment[],
+  MAILGUN_API_KEY: string,
+  MAILGUN_DOMAIN: string,
+  originalSubject: string,
+  originalContent?: string
+) {
+  try {
+    const senderCopyForm = new FormData();
+    senderCopyForm.append("to", emailData.senderEmail);
+    senderCopyForm.append("from", `${emailData.senderName} <${emailData.senderEmail}>`);
+    senderCopyForm.append("subject", `[COPY] ${originalSubject}`);
+    
+    if (emailData.emailType === "template") {
+      // For template emails, include a note about the template used
+      const templateInfo = `This is a copy of the email sent using template: ${emailData.templateData.templateName}\n\nOriginal subject: ${originalSubject}\nRecipients: ${emailData.recipients?.length || 0}`;
+      senderCopyForm.append("text", templateInfo);
+    } else if (originalContent) {
+      // For custom emails, include the actual content
+      const copyContent = `This is a copy of the email you sent.\n\nOriginal subject: ${originalSubject}\nRecipients: ${emailData.recipients?.length || 0}\n\n--- Original Message ---\n${originalContent}`;
+      senderCopyForm.append("text", copyContent);
+    }
+
+    // Add attachments to sender copy
+    await addAttachmentsToFormData(senderCopyForm, attachments);
+
+    const res = await fetch(`https://api.mailgun.net/v3/${MAILGUN_DOMAIN}/messages`, {
+      method: "POST",
+      headers: {
+        Authorization: "Basic " + btoa(`api:${MAILGUN_API_KEY}`),
+      },
+      body: senderCopyForm,
+    });
+
+    if (!res.ok) {
+      console.error("Failed to send sender copy:", await res.text());
+    }
+  } catch (error) {
+    console.error("Error sending sender copy:", error);
+  }
+}
+
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -180,6 +224,17 @@ serve(async (req: Request) => {
 
       await logToSupabase(logPayload);
 
+      // Send copy to sender if main email was successful
+      if (res.ok) {
+        await sendSenderCopy(
+          emailData,
+          attachments,
+          MAILGUN_API_KEY,
+          MAILGUN_DOMAIN,
+          emailData.subject
+        );
+      }
+
       return new Response(
         JSON.stringify({
           success: res.ok,
@@ -194,6 +249,8 @@ serve(async (req: Request) => {
     else if (emailData.emailType === "custom" && emailData.customContent) {
       // For custom emails, we need to send individual emails with attachments
       const results = [];
+      let successfulSend = false;
+      let sampleContent = "";
       
       for (const recipient of recipientEmails) {
         const vars = recipientVariables[recipient] as Record<string, string>;
@@ -204,6 +261,11 @@ serve(async (req: Request) => {
           const regex = new RegExp(`{{\\s*${key}\\s*}}`, "g");
           personalizedSubject = personalizedSubject.replace(regex, value);
           personalizedText = personalizedText.replace(regex, value);
+        }
+
+        // Store sample content for sender copy (use first recipient's personalized content)
+        if (!sampleContent) {
+          sampleContent = personalizedText;
         }
 
         const personalForm = new FormData();
@@ -254,6 +316,22 @@ serve(async (req: Request) => {
 
         await logToSupabase(singleLog);
         results.push({ success: res.ok, recipient, error: res.ok ? null : result.message });
+        
+        if (res.ok) {
+          successfulSend = true;
+        }
+      }
+
+      // Send copy to sender if at least one email was successful
+      if (successfulSend) {
+        await sendSenderCopy(
+          emailData,
+          attachments,
+          MAILGUN_API_KEY,
+          MAILGUN_DOMAIN,
+          emailData.subject,
+          sampleContent
+        );
       }
 
       const successCount = results.filter(r => r.success).length;

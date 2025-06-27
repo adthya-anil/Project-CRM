@@ -327,6 +327,7 @@ const Leads = ({isAdmin}) => {
           headerName: 'Course Advisor',
           flex: 1,
           filterable: true,
+          sortable: true,
           minWidth: 150,
           renderCell: (params) => (
             <AssignUserCell
