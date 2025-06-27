@@ -56,7 +56,7 @@ const VisuallyHiddenInput = styled('input')({
 
 const WhatsAppDialog = ({ open, onClose, selectedLeads = [] }) => {
   // Template Mode
- const SHOW_TEMPLATES = ['welcome'];
+ const SHOW_TEMPLATES = ['welcome','idip','_welcome_image'];
 
   
 
