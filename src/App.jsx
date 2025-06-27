@@ -52,7 +52,7 @@ function App() {
       <ColorModeContext.Provider value={colorMode}>
         <ThemeProvider theme={theme}>
           <CssBaseline />
-          {!session ? (
+          {session ? (
             <Routes>
               <Route path="/reset-password" element={<PasswordReset />} />
               <Route path="/reset-password-confirm" element={<PasswordResetConfirm />} />
