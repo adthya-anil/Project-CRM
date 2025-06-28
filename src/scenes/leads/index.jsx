@@ -166,24 +166,71 @@ const Leads = ({isAdmin}) => {
       </Select>
     );
   };
+const handleAssignUser = async (rowId, newUserId) => {
+  const { error } = await supabase
+    .from('mock')
+    .update({ user_id: newUserId || null })
+    .eq('id', rowId);
 
-  const handleAssignUser = async (rowId, newUserId) => {
-    const { error } = await supabase
-      .from('mock')
-      .update({ user_id: newUserId || null })
-      .eq('id', rowId);
+  if (!error) {
+    queryClient.setQueryData([TABLE_NAME], (old) =>
+      old?.map((lead) =>
+        lead.id === rowId ? { ...lead, user_id: newUserId || null } : lead
+      )
+    );
 
-    if (!error) {
-      queryClient.setQueryData([TABLE_NAME], (old) =>
-        old?.map((lead) =>
-          lead.id === rowId ? { ...lead, user_id: newUserId || null } : lead
-        )
-      );
-    } else {
-      console.error("Assignment failed", error);
+    // Send WhatsApp notification if user is assigned (not unassigned)
+    if (newUserId) {
+      try {
+        // Get user phone number
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('phone')
+          .eq('user_id', newUserId)
+          .single();
+
+        if (userError) {
+          console.error("Failed to fetch user phone:", userError);
+          return;
+        }
+
+        // Get lead details for template variables
+        const { data: leadData, error: leadError } = await supabase
+          .from('mock')
+          .select('id, Name')
+          .eq('id', parseInt(rowId))
+          .single();
+
+        if (leadError) {
+          console.error("Failed to fetch lead details:", leadError);
+          return;
+        }
+
+        console.log("Lead data for WhatsApp:", { id: leadData.id, Name: leadData.Name });
+
+        // Send WhatsApp message via edge function
+        const { error: whatsappError } = await supabase.functions.invoke('send-whatsapp', {
+          body: {
+            to: userData.phone,
+            contentSid: 'HX5f55d18be109a69387d5810694f560f9', // Content template SID for lead_interested
+            contentVariables: {
+              "1": leadData.id.toString(), // Lead ID for {{1}}
+              "2": leadData.Name           // Lead Name for {{2}}
+            }
+          }
+        });
+
+        if (whatsappError) {
+          console.error("Failed to send WhatsApp message:", whatsappError);
+        }
+      } catch (error) {
+        console.error("Error sending WhatsApp notification:", error);
+      }
     }
-  };
-
+  } else {
+    console.error("Assignment failed", error);
+  }
+};
   const handleBulkAssignUser = async () => {
     if (!selectedRows.length || !bulkAssignUser) return;
     
