@@ -409,7 +409,7 @@ const handleAssignUser = async (rowId, newUserId) => {
       sortable: false,
       minWidth: 170,
       renderCell: (params) => {
-        return (<DropDown id={params.id} value={params.value} table={TABLE_NAME} option={['Converted','Converting','Idle']} column={'status'}/>)
+        return (<DropDown id={params.id} value={params.value} table={TABLE_NAME} option={['KB Requested','Converting','Idle']} column={'status'}/>)
       }
     },
     {
