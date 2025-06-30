@@ -56,7 +56,13 @@ const AccountantSection = () => {
   const [selectedLead, setSelectedLead] = useState(null);
   const [kbDialogOpen, setKbDialogOpen] = useState(false);
   const [kbNumber, setKbNumber] = useState('');
-  const [courseName, setCourseName] = useState('');
+  const courseOptions = [
+    { label: 'IDIP', value: 'IDIP' },
+    { label: 'IGC', value: 'IGC' },
+    { label: 'OTHER', value: 'OTHER' }
+  ];
+  const [selectedCourses, setSelectedCourses] = useState([]);
+  const [courseAmounts, setCourseAmounts] = useState({});
   const [amount, setAmount] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -77,17 +83,22 @@ const AccountantSection = () => {
       if (leadsError) throw leadsError;
 
       // Get KB numbers for these leads to show conversion history
-      const leadIds = leads.map(lead => lead.id);
-      const { data: kbData, error: kbError } = await supabase
-        .from('kb_numbers')
-        .select('lead_id, kb_number, course_name, amount, created_at')
-        .in('lead_id', leadIds)
-        .order('created_at', { ascending: false });
+      const leadIds = leads?.map(lead => lead.id) || [];
+      
+      let kbData = [];
+      if (leadIds.length > 0) {
+        const { data: kbResult, error: kbError } = await supabase
+          .from('kb_numbers')
+          .select('lead_id, kb_number, course_name, amount, created_at')
+          .in('lead_id', leadIds)
+          .order('created_at', { ascending: false });
 
-      if (kbError) throw kbError;
+        if (kbError) throw kbError;
+        kbData = kbResult || [];
+      }
 
       // Combine data
-      const enrichedLeads = leads.map(lead => ({
+      const enrichedLeads = (leads || []).map(lead => ({
         ...lead,
         kbHistory: kbData.filter(kb => kb.lead_id === lead.id),
         lastKbNumber: kbData.find(kb => kb.lead_id === lead.id)?.kb_number || null
@@ -146,14 +157,20 @@ const AccountantSection = () => {
 
   // Handle KB number submission
   const handleKbSubmit = async () => {
-    if (!selectedLead || !kbNumber.trim()) {
-      setValidationError('Please fill in all required fields');
+    console.log('Submitting KB for lead:', selectedLead, kbNumber, selectedCourses, courseAmounts);
+    if (!selectedLead || !kbNumber.trim() || selectedCourses.length === 0) {
+      setValidationError('Please fill in all required fields and select at least one course');
       return;
     }
-
+    // Validate all selected course amounts
+    for (const course of selectedCourses) {
+      if (!courseAmounts[course] || isNaN(parseFloat(courseAmounts[course]))) {
+        setValidationError(`Please enter a valid amount for ${course}`);
+        return;
+      }
+    }
     setIsSubmitting(true);
     setValidationError('');
-
     try {
       // Validate KB number
       const validationError = await validateKbNumber(selectedLead.id, kbNumber.trim());
@@ -162,36 +179,31 @@ const AccountantSection = () => {
         setIsSubmitting(false);
         return;
       }
-
-      // Insert KB number record
-      const { error: kbError } = await supabase
-        .from('kb_numbers')
-        .insert({
-          lead_id: selectedLead.id,
-          kb_number: kbNumber.trim(),
-          course_name: courseName.trim() || null,
-          amount: amount ? parseFloat(amount) : null
-        });
-
-      if (kbError) throw kbError;
-
+      // Insert KB number record for each selected course
+      for (const course of selectedCourses) {
+        const { error: kbError } = await supabase
+          .from('kb_numbers')
+          .insert({
+            lead_id: selectedLead.id,
+            kb_number: kbNumber.trim(),
+            course_name: course,
+            amount: parseFloat(courseAmounts[course])
+          });
+        if (kbError) throw kbError;
+      }
       // Update lead status to Converted
       const { error: statusError } = await supabase
         .from('mock')
         .update({ status: 'Converted' })
         .eq('id', selectedLead.id);
-
       if (statusError) throw statusError;
-
       // Success - close dialog and refresh data
       setKbDialogOpen(false);
       resetForm();
       await fetchKBRequestLeads();
       showAlert('success', `Lead ${selectedLead.Name} successfully converted with KB number ${kbNumber.trim()}`);
-
       // Invalidate leads query cache if using react-query
       queryClient.invalidateQueries(['mock']);
-
     } catch (error) {
       console.error('Error processing KB number:', error);
       showAlert('error', 'Failed to process KB number');
@@ -204,7 +216,8 @@ const AccountantSection = () => {
   const resetForm = () => {
     setSelectedLead(null);
     setKbNumber('');
-    setCourseName('');
+    setSelectedCourses([]);
+    setCourseAmounts({});
     setAmount('');
     setValidationError('');
   };
@@ -222,17 +235,22 @@ const AccountantSection = () => {
 
   // Handle convert button click
   const handleConvertClick = (lead) => {
+    console.log('Convert clicked for lead:', lead);
     setSelectedLead(lead);
     setKbDialogOpen(true);
   };
 
   // DataGrid columns with custom styling
-  const columns = [
-    { 
-      field: "id", 
-      headerName: "Lead ID", 
-      width: 100,
-      renderCell: (params) => (
+// Updated DataGrid columns with centered text and increased font size
+const columns = [
+  { 
+    field: "id", 
+    headerName: "Lead ID", 
+    width: 100,
+    headerAlign: 'center',
+    align: 'center',
+    renderCell: (params) => (
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', width: '100%' }}>
         <Chip
           label={params.value}
           size="small"
@@ -240,94 +258,128 @@ const AccountantSection = () => {
             backgroundColor: brandColors.primaryLight,
             color: 'white',
             fontWeight: 'bold',
-            fontSize: '0.75rem'
+            fontSize: '0.875rem'
           }}
         />
-      )
-    },
-    { 
-      field: "Name", 
-      headerName: "Lead Name", 
-      flex: 1,
-      minWidth: 150,
-      renderCell: (params) => (
+      </Box>
+    )
+  },
+  { 
+    field: "Name", 
+    headerName: "Lead Name", 
+    flex: 1,
+    minWidth: 150,
+    headerAlign: 'center',
+    align: 'center',
+    renderCell: (params) => (
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', width: '100%' }}>
         <Typography 
           variant="body2" 
           sx={{ 
             fontWeight: 600,
-            color: brandColors.textPrimary
+            color: brandColors.textPrimary,
+            fontSize: '0.95rem',
+            textAlign: 'center'
           }}
         >
           {params.value}
         </Typography>
-      )
-    },
-    { 
-      field: "Phone", 
-      headerName: "Phone", 
-      flex: 1,
-      minWidth: 130,
-      renderCell: (params) => (
+      </Box>
+    )
+  },
+  { 
+    field: "Phone", 
+    headerName: "Phone", 
+    flex: 1,
+    minWidth: 130,
+    headerAlign: 'center',
+    align: 'center',
+    renderCell: (params) => (
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', width: '100%' }}>
         <Typography 
           variant="body2" 
-          sx={{ color: brandColors.textSecondary }}
+          sx={{ 
+            color: brandColors.textSecondary,
+            fontSize: '0.9rem',
+            textAlign: 'center'
+          }}
         >
           {params.value}
         </Typography>
-      )
-    },
-    { 
-      field: "Email", 
-      headerName: "Email", 
-      flex: 1,
-      minWidth: 180,
-      renderCell: (params) => (
+      </Box>
+    )
+  },
+  { 
+    field: "Email", 
+    headerName: "Email", 
+    flex: 1,
+    minWidth: 180,
+    headerAlign: 'center',
+    align: 'center',
+    renderCell: (params) => (
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', width: '100%' }}>
         <Typography 
           variant="body2" 
-          sx={{ color: brandColors.textSecondary }}
+          sx={{ 
+            color: brandColors.textSecondary,
+            fontSize: '0.9rem',
+            textAlign: 'center'
+          }}
         >
           {params.value}
         </Typography>
-      )
+      </Box>
+    )
+  },
+  { 
+    field: "timestamp", 
+    headerName: "Request Date", 
+    flex: 1,
+    minWidth: 150,
+    headerAlign: 'center',
+    align: 'center',
+    valueFormatter: (value) => {
+      const date = new Date(value);
+      return date.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
     },
-    { 
-      field: "timestamp", 
-      headerName: "Request Date", 
-      flex: 1,
-      minWidth: 150,
-      valueFormatter: (value) => {
-        const date = new Date(value);
-        return date.toLocaleDateString('en-GB', {
-          day: '2-digit',
-          month: 'short',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true
-        });
-      },
-      renderCell: (params) => (
+    renderCell: (params) => (
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', width: '100%' }}>
         <Typography 
           variant="body2" 
-          sx={{ color: brandColors.textSecondary }}
+          sx={{ 
+            color: brandColors.textSecondary,
+            fontSize: '0.9rem',
+            textAlign: 'center'
+          }}
         >
           {params.formattedValue}
         </Typography>
-      )
-    },
-    {
-      field: "lastKbNumber",
-      headerName: "Last KB Number",
-      width: 150,
-      renderCell: (params) => (
-        params.value ? (
+      </Box>
+    )
+  },
+  {
+    field: "lastKbNumber",
+    headerName: "Last KB Number",
+    width: 150,
+    headerAlign: 'center',
+    align: 'center',
+    renderCell: (params) => (
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', width: '100%' }}>
+        {params.value ? (
           <Chip
             label={params.value}
             size="small"
             sx={{
               backgroundColor: brandColors.success,
               color: 'white',
-              fontSize: '0.75rem'
+              fontSize: '0.875rem'
             }}
           />
         ) : (
@@ -335,27 +387,33 @@ const AccountantSection = () => {
             variant="body2" 
             sx={{ 
               color: brandColors.textSecondary,
-              fontStyle: 'italic'
+              fontStyle: 'italic',
+              fontSize: '0.9rem',
+              textAlign: 'center'
             }}
           >
             None
           </Typography>
-        )
-      )
-    },
-    {
-      field: "actions",
-      headerName: "Actions",
-      width: 120,
-      sortable: false,
-      filterable: false,
-      renderCell: (params) => (
+        )}
+      </Box>
+    )
+  },
+  {
+    field: "actions",
+    headerName: "Actions",
+    width: 120,
+    headerAlign: 'center',
+    align: 'center',
+    sortable: false,
+    filterable: false,
+    renderCell: (params) => (
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', width: '100%' }}>
         <Button
           variant="contained"
           size="small"
           onClick={() => handleConvertClick(params.row)}
           sx={{ 
-            fontSize: '0.75rem',
+            fontSize: '0.875rem',
             px: 2,
             py: 0.5,
             backgroundColor: brandColors.secondary,
@@ -370,9 +428,86 @@ const AccountantSection = () => {
         >
           Convert
         </Button>
-      )
+      </Box>
+    )
+  }
+];
+
+
+// Also update the DataGrid container styles for better text presentation
+const dataGridStyles = {
+  height: 600,
+  '& .MuiDataGrid-root': {
+    border: 'none',
+    fontFamily: 'inherit',
+    fontSize: '0.9rem' // Base font size increase
+  },
+  '& .MuiDataGrid-cell': {
+    borderBottom: `1px solid ${brandColors.primary}08`,
+    py: 2,
+    display: 'flex !important',
+    alignItems: 'center !important',
+    justifyContent: 'center !important', // Center cell content
+    textAlign: 'center !important'
+  },
+  '& .MuiDataGrid-cellContent': {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    height: '100%'
+  },
+  '& .MuiDataGrid-columnHeaders': {
+    backgroundColor: brandColors.primary,
+    borderBottom: 'none',
+    '& .MuiDataGrid-columnHeader': {
+      backgroundColor: brandColors.primary,
+      display: 'flex !important',
+      alignItems: 'center !important',
+      justifyContent: 'center !important',
+      '& .MuiDataGrid-columnHeaderTitle': {
+        color: 'white',
+        fontWeight: 600,
+        fontSize: '1rem', // Increased header font size
+        textAlign: 'center !important'
+      }
+    },
+    '& .MuiDataGrid-columnSeparator': {
+      color: 'white'
+    },
+    '& .MuiDataGrid-iconButtonContainer': {
+      color: 'white'
+    },
+    '& .MuiDataGrid-sortIcon': {
+      color: 'white'
     }
-  ];
+  },
+  '& .MuiDataGrid-virtualScroller': {
+    backgroundColor: brandColors.cardBackground,
+  },
+  '& .MuiDataGrid-footerContainer': {
+    borderTop: `1px solid ${brandColors.primary}10`,
+    backgroundColor: brandColors.background,
+    '& .MuiTablePagination-root': {
+      fontSize: '0.9rem' // Increased pagination font size
+    }
+  },
+  '& .MuiDataGrid-row:hover': {
+    backgroundColor: `${brandColors.secondary}08`
+  },
+  // Additional styles to ensure proper centering
+  '& .MuiDataGrid-row .MuiDataGrid-cell': {
+    display: 'flex !important',
+    alignItems: 'center !important',
+    justifyContent: 'center !important'
+  },
+  '& .MuiDataGrid-row .MuiDataGrid-cell > div': {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%'
+  }
+};
 
   if (isLoading) {
     return <LoadingComponent />;
@@ -597,48 +732,7 @@ const AccountantSection = () => {
           </Typography>
         </Box>
         
-        <Box sx={{ 
-          height: 600,
-          '& .MuiDataGrid-root': {
-            border: 'none',
-            fontFamily: 'inherit'
-          },
-          '& .MuiDataGrid-cell': {
-            borderBottom: `1px solid ${brandColors.primary}08`,
-            py: 2
-          },
-          '& .MuiDataGrid-columnHeaders': {
-            backgroundColor: brandColors.primary,
-            borderBottom: 'none',
-            '& .MuiDataGrid-columnHeader': {
-              backgroundColor: brandColors.primary,
-              '& .MuiDataGrid-columnHeaderTitle': {
-                color: 'white',
-                fontWeight: 600,
-                fontSize: '0.875rem'
-              }
-            },
-            '& .MuiDataGrid-columnSeparator': {
-              color: 'white'
-            },
-            '& .MuiDataGrid-iconButtonContainer': {
-              color: 'white'
-            },
-            '& .MuiDataGrid-sortIcon': {
-              color: 'white'
-            }
-          },
-          '& .MuiDataGrid-virtualScroller': {
-            backgroundColor: brandColors.cardBackground,
-          },
-          '& .MuiDataGrid-footerContainer': {
-            borderTop: `1px solid ${brandColors.primary}10`,
-            backgroundColor: brandColors.background,
-          },
-          '& .MuiDataGrid-row:hover': {
-            backgroundColor: `${brandColors.secondary}08`
-          }
-        }}>
+        <Box sx={dataGridStyles}>
           <DataGrid
             rows={kbRequestLeads}
             columns={columns}
@@ -673,7 +767,7 @@ const AccountantSection = () => {
         >
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <AssignmentIcon sx={{ mr: 2 }} />
-            Convert Lead: {selectedLead?.Name}
+            Convert Lead: {selectedLead?.Name} (ID: {selectedLead?.id})
           </Box>
         </DialogTitle>
         
@@ -716,8 +810,8 @@ const AccountantSection = () => {
             fullWidth
             margin="normal"
             required
-            error={!!validationError}
-            helperText={validationError}
+            error={!!validationError && !kbNumber.trim()}
+            helperText={!!validationError && !kbNumber.trim() ? validationError : ''}
             placeholder="Enter KB number"
             sx={{
               '& .MuiOutlinedInput-root': {
@@ -734,51 +828,53 @@ const AccountantSection = () => {
             }}
           />
 
-          <TextField
-            label="Course Name"
-            value={courseName}
-            onChange={(e) => setCourseName(e.target.value)}
-            fullWidth
-            margin="normal"
-            placeholder="Enter course name (optional)"
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                '&:hover fieldset': {
-                  borderColor: brandColors.secondary,
-                },
-                '&.Mui-focused fieldset': {
-                  borderColor: brandColors.primary,
-                },
-              },
-              '& .MuiInputLabel-root.Mui-focused': {
-                color: brandColors.primary,
-              },
-            }}
-          />
-
-          <TextField
-            label="Amount"
-            type="number"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            fullWidth
-            margin="normal"
-            placeholder="Enter amount (optional)"
-            inputProps={{ min: 0, step: 0.01 }}
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                '&:hover fieldset': {
-                  borderColor: brandColors.secondary,
-                },
-                '&.Mui-focused fieldset': {
-                  borderColor: brandColors.primary,
-                },
-              },
-              '& .MuiInputLabel-root.Mui-focused': {
-                color: brandColors.primary,
-              },
-            }}
-          />
+          {/* Course selection checkboxes and amount fields */}
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+              Select Course(s)
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+              {courseOptions.map((course) => (
+                <Box key={course.value} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <input
+                    type="checkbox"
+                    id={`course-${course.value}`}
+                    checked={selectedCourses.includes(course.value)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedCourses([...selectedCourses, course.value]);
+                      } else {
+                        setSelectedCourses(selectedCourses.filter((c) => c !== course.value));
+                        setCourseAmounts((prev) => {
+                          const updated = { ...prev };
+                          delete updated[course.value];
+                          return updated;
+                        });
+                      }
+                    }}
+                  />
+                  <label htmlFor={`course-${course.value}`}>{course.label}</label>
+                  {selectedCourses.includes(course.value) && (
+                    <TextField
+                      label="Amount"
+                      type="number"
+                      value={courseAmounts[course.value] || ''}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setCourseAmounts((prev) => ({ ...prev, [course.value]: value }));
+                      }}
+                      size="small"
+                      sx={{ width: 100, ml: 1 }}
+                      inputProps={{ min: 0, step: 0.01 }}
+                    />
+                  )}
+                </Box>
+              ))}
+            </Box>
+            {validationError && selectedCourses.length === 0 && (
+              <Typography color="error" variant="body2" sx={{ mt: 1 }}>{validationError}</Typography>
+            )}
+          </Box>
         </DialogContent>
         
         <Divider />
@@ -797,10 +893,11 @@ const AccountantSection = () => {
           <Button 
             onClick={handleKbSubmit} 
             variant="contained"
-            disabled={isSubmitting || !kbNumber.trim()}
+            disabled={isSubmitting || !kbNumber.trim() || selectedCourses.length === 0}
             sx={{
               backgroundColor: brandColors.primary,
               fontWeight: 600,
+              color:'white !important',
               px: 3,
               '&:hover': {
                 backgroundColor: brandColors.primaryDark

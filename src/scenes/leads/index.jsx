@@ -362,9 +362,9 @@ const handleAssignUser = async (rowId, newUserId) => {
 
   const leadsColumns = [
     { field: "id", headerName: "ID", flex: 1, editable: true },
-    { field: "Name", headerName: "Name", flex: 1, editable: true },
+    { field: "Name", headerName: "Name", minWidth: 150, editable: true },
     { field: "Email", headerName: "Email", flex: 1, editable: true },
-    { field: "Phone", headerName: "Phone", flex: 1, editable: true },
+    { field: "Phone", headerName: "Phone", minWidth: 150, editable: true },
     { field: "JobTitle", headerName: "Job Title", flex: 1, editable: true },
     { field: "Organization", headerName: "Organization", flex: 1, editable: true },
     { field: "State", headerName: "State", flex: 1, editable: true },
@@ -443,7 +443,77 @@ const handleAssignUser = async (rowId, newUserId) => {
         };
       }
     },
-    { field: "next_course", headerName: "Next Course", flex: 1, editable: true },
+    { field: "next_course", headerName: "Next Course", minWidth: 200, editable: true,
+      renderCell: (params) => {
+        const courseOptions = [
+          { label: 'IDIP', value: 'IDIP' },
+          { label: 'IGC', value: 'IGC' },
+          { label: 'OTHER', value: 'OTHER' }
+        ];
+        const value = Array.isArray(params.value) ? params.value : [];
+        const rowId = params.id;
+        const [updating, setUpdating] = useState(false);
+        // Regex-based checked logic
+        const isChecked = (course) => {
+          if (course === 'IDIP') {
+            return value.some(v => /idip/i.test(v));
+          } else if (course === 'IGC') {
+            return value.some(v => /igc/i.test(v));
+          } else if (course === 'OTHER') {
+            return value.some(v => !/idip/i.test(v) && !/igc/i.test(v));
+          }
+          return false;
+        };
+        // When user checks/unchecks, update the array accordingly
+        const handleChange = async (course, checked) => {
+          setUpdating(true);
+          let newSelection = [...value];
+          if (course === 'IDIP') {
+            if (checked && !newSelection.some(v => /idip/i.test(v))) {
+              newSelection.push('IDIP');
+            } else if (!checked) {
+              newSelection = newSelection.filter(v => !/idip/i.test(v));
+            }
+          } else if (course === 'IGC') {
+            if (checked && !newSelection.some(v => /igc/i.test(v))) {
+              newSelection.push('IGC');
+            } else if (!checked) {
+              newSelection = newSelection.filter(v => !/igc/i.test(v));
+            }
+          } else if (course === 'OTHER') {
+            if (checked) {
+              // Add a generic 'OTHER' if no non-idip/igc exists
+              if (!newSelection.some(v => !/idip/i.test(v) && !/igc/i.test(v))) {
+                newSelection.push('OTHER');
+              }
+            } else {
+              newSelection = newSelection.filter(v => /idip/i.test(v) || /igc/i.test(v));
+            }
+          }
+          await supabase
+            .from('mock')
+            .update({ next_course: newSelection })
+            .eq('id', rowId);
+          queryClient.invalidateQueries(['mock']);
+          setUpdating(false);
+        };
+        return (
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            {courseOptions.map((course) => (
+              <label key={course.value} style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <input
+                  type="checkbox"
+                  checked={isChecked(course.value)}
+                  disabled={updating}
+                  onChange={e => handleChange(course.value, e.target.checked)}
+                />
+                {course.label}
+              </label>
+            ))}
+          </Box>
+        );
+      }
+    },
     { 
       field: "referrals", 
       headerName: "Referrals", 
@@ -451,7 +521,7 @@ const handleAssignUser = async (rowId, newUserId) => {
       editable: false,
       renderCell: (params) => (params.value?.join(", ") || "")
     },
-    { field: "Source", headerName: "Source", flex: 1, editable: true },
+    { field: "Source", headerName: "Source", minWidth: 80, editable: true },
     {
       field: "timestamp",
       headerName: "Timestamp",

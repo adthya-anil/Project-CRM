@@ -22,7 +22,9 @@ import {
   ListItemText, 
  Container,
  CircularProgress,
- Alert
+ Alert,
+ Checkbox,
+ FormGroup
 } from "@mui/material";
 import { Plus, Trash2 } from "lucide-react";
 import { supabase } from "../../../supabaseClient";
@@ -716,6 +718,8 @@ const Form = () => {
     formState: { errors },
     reset,
     setFocus,
+    watch,
+    setValue
   } = useForm({
     mode: 'onTouched'
   });
@@ -768,7 +772,12 @@ const Form = () => {
       Email: data.Email?.trim() || null,
   Phone: data.Phone?.trim() || null,
       coursesAttended: filteredCourses,
-      referrals: filteredReferrals
+      referrals: filteredReferrals,
+      next_course: Array.isArray(data.next_course)
+        ? data.next_course
+        : typeof data.next_course === 'string'
+          ? data.next_course.split(',').map(s => s.trim()).filter(Boolean)
+          : []
     };
     const success = await insertLeadRow(finalData);
     if (success) {
@@ -1263,31 +1272,27 @@ const Form = () => {
                     >
                       Next Course
                     </Typography>
-                    <TextField
-                      fullWidth
-                      label="Next Course"
-                      {...register("next_course")}
-                      error={!!errors.next_course}
-                      helperText={errors.next_course?.message}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          backgroundColor: 'white',
-                          borderRadius: 2,
-                          '&:hover .MuiOutlinedInput-notchedOutline': {
-                            borderColor: '#3196c6',
-                          },
-                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                            borderColor: '#0a3456',
+                    <FormGroup row>
+                      {['IDIP', 'IGC', 'OTHER'].map(option => (
+                        <FormControlLabel
+                          key={option}
+                          control={
+                            <Checkbox
+                              checked={Array.isArray(watch('next_course')) && watch('next_course').includes(option)}
+                              onChange={e => {
+                                const current = Array.isArray(watch('next_course')) ? watch('next_course') : [];
+                                if (e.target.checked) {
+                                  setValue('next_course', [...current, option]);
+                                } else {
+                                  setValue('next_course', current.filter(c => c !== option));
+                                }
+                              }}
+                            />
                           }
-                        },
-                        '& .MuiInputLabel-root.Mui-focused': {
-                          color: '#0a3456',
-                        },
-                        'input': {
-                          color: '#0a3456',
-                        }
-                      }}
-                    />
+                          label={option}
+                        />
+                      ))}
+                    </FormGroup>
                   </Paper>
                 </Grid>
 
