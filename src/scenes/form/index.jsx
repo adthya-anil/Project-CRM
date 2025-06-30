@@ -127,10 +127,10 @@ const detectHeaderByKeywords = (header) => {
   }
   
   // Courses detection
-  if (cleanHeader.includes('course') || cleanHeader.includes('training') ||
-      cleanHeader.includes('attended')) {
-    return 'coursesAttended';
-  }
+  // if (cleanHeader.includes('course') || cleanHeader.includes('training') ||
+  //     cleanHeader.includes('attended')) {
+  //   return 'coursesAttended';
+  // }
   
   // Referrals detection
   if (cleanHeader.includes('referral') || cleanHeader.includes('refer')) {
@@ -738,12 +738,12 @@ const Form = () => {
       console.log('Supabase insert error:', error);
       let msg = "Error inserting row: " + error.message;
       if (error.message.toLowerCase().includes('unique') || error.message.toLowerCase().includes('duplicate')) {
-        if (error.message.toLowerCase().includes('email')) {
-          msg = `Email "${newLead.Email}" already exists in database.`;
-        } else if (error.message.toLowerCase().includes('phone')) {
-          msg = `Phone "${newLead.Phone}" already exists in database.`;
-        }
-      }
+  if (error.message.toLowerCase().includes('email') && newLead.Email && newLead.Email.trim() !== '') {
+    msg = `Email "${newLead.Email}" already exists in database.`;
+  } else if (error.message.toLowerCase().includes('phone') && newLead.Phone && newLead.Phone.trim() !== '') {
+    msg = `Phone "${newLead.Phone}" already exists in database.`;
+  }
+}
       setErrorMessage(msg);
       setSuccessMessage("");
       setTimeout(() => {
@@ -765,6 +765,8 @@ const Form = () => {
     const filteredReferrals = referrals.filter(referral => referral.trim() !== "");
     const finalData = {
       ...data,
+      Email: data.Email?.trim() || null,
+  Phone: data.Phone?.trim() || null,
       coursesAttended: filteredCourses,
       referrals: filteredReferrals
     };
