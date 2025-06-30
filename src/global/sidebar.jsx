@@ -20,7 +20,7 @@ import PieChartOutlineOutlinedIcon from "@mui/icons-material/PieChartOutlineOutl
 import TimelineOutlinedIcon from "@mui/icons-material/TimelineOutlined";
 import MenuOutlinedIcon from "@mui/icons-material/MenuOutlined";
 
-const SideBar = ({isAdmin,userId}) => {
+const SideBar = ({isAdmin,userId,isAccountant}) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const [collapsed, setCollapsed] = useState(false);
@@ -136,14 +136,21 @@ const SideBar = ({isAdmin,userId}) => {
             >
               {isAdmin ? "Manage Teams" : "Your Statistics"}
             </MenuItem>
-            <MenuItem
+            {isAccountant ?(<MenuItem
+              icon={<PeopleAltSharpIcon />}
+              component={<Link to="/manage" />}
+              active={selected === "Manage"}
+              onClick={() => handleMenuItemClick("Manage")}
+            >
+              Manage
+            </MenuItem>) : (<MenuItem
               icon={<PeopleAltSharpIcon />}
               component={<Link to="/leads" />}
               active={selected === "Manage Leads"}
               onClick={() => handleMenuItemClick("Manage Leads")}
             >
               Manage Leads
-            </MenuItem>
+            </MenuItem>) }
             <MenuItem
               icon={<ReceiptOutlinedIcon />}
               component={<Link to="/reports" />}

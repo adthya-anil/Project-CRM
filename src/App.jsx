@@ -28,6 +28,7 @@ import useUserRole from "./hooks/roles.js";
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import PasswordResetRequest from "./scenes/auth/PasswordResetRequest.jsx";
 import PasswordReset from "./scenes/auth/PasswordReset.jsx";
+import AccountantSection from "./scenes/manage/index.jsx";
 
 
 
@@ -50,6 +51,7 @@ function App() {
   const userId = session?.user?.id;
   const role = useUserRole(userId);
   const isAdmin = role === "admin";
+  const isAccountant = role === "accountant"
   const [theme,colorMode] = useMode();
   const [forceReset, setForceReset] = useState(false);
     const location = useLocation();
@@ -77,7 +79,7 @@ const isResetPasswordRoute = location.pathname === "/reset-password";
   </Routes>
 ) : (
   <div className="app">
-    <SideBar isAdmin={isAdmin} userId={userId} />
+    <SideBar isAdmin={isAdmin} userId={userId} isAccountant={isAccountant} />
     <main className="content">
       <TopBar isAdmin={isAdmin} />
       <Routes>
@@ -91,6 +93,7 @@ const isResetPasswordRoute = location.pathname === "/reset-password";
         <Route path="/bar" element={<Bar isAdmin={isAdmin} />} />
         <Route path="/reports" element={<Reports isAdmin={isAdmin} />} />
         <Route path="/faq" element={<FAQ />} />
+        <Route path="/manage" element={<AccountantSection />} />
       </Routes>
     </main>
   </div>

@@ -945,13 +945,7 @@ const Form = () => {
                   <TextField
                     fullWidth
                     label="Email"
-                    {...register("Email", {
-                      required: "Email is required",
-                      pattern: {
-                        value: /^\S+@\S+$/i,
-                        message: "Invalid email format",
-                      },
-                    })}
+                    {...register("Email")}
                     error={!!errors.Email}
                     helperText={errors.Email?.message}
                     sx={{
@@ -1270,7 +1264,7 @@ const Form = () => {
                     <TextField
                       fullWidth
                       label="Next Course"
-                      {...register("next_course", { required: "Next course is required" })}
+                      {...register("next_course")}
                       error={!!errors.next_course}
                       helperText={errors.next_course?.message}
                       sx={{
