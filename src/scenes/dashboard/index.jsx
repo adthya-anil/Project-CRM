@@ -11,8 +11,10 @@ import { format } from "date-fns";
 import "./dashboard.css";
 import PerformanceChart from "../../components/Barstack.jsx"
 import HorizontalBarChart from "../../components/bar.jsx";
+import LoadingComponent from "../../loading/LoadingComponent.jsx";
 
-const Dashboard = ({ isDashboard = true, isAdmin }) => {
+const Dashboard = ({ isDashboard = true, isAdmin}) => {
+
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const [pendingTasks, setPendingTasks] = useState([]);

@@ -6,7 +6,7 @@ import logo from '../../assets/react.svg';
 import { Typography } from "@mui/material";
 
 
-function SignIn() {
+function SignIn({isAccountant}) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -20,6 +20,10 @@ function SignIn() {
 
     if (error) {
       alert(error.message);
+      return;
+    }
+    if (isAccountant) {
+      navigate("/manage");
     } else {
       navigate("/");
     }

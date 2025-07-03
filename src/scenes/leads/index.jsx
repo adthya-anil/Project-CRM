@@ -1,6 +1,6 @@
 import { Box, Typography, Button, useTheme, Tabs, Tab, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Autocomplete, MenuItem, Select, FormControl, InputLabel } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
-import { useState, useEffect } from "react";
+import { useState, useEffect, } from "react";
 import { tokens } from "../../../theme";
 import Header from "../../components/Header";
 import { useLeads } from "../../hooks/useLeads";
@@ -24,6 +24,7 @@ const Leads = ({isAdmin}) => {
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   const [bulkAssignUser, setBulkAssignUser] = useState('');
   const [tabValue, setTabValue] = useState(0);
+  
   
   // Follow-up states
   const [followups, setFollowups] = useState([]);
@@ -363,11 +364,11 @@ const handleAssignUser = async (rowId, newUserId) => {
   const leadsColumns = [
     { field: "id", headerName: "ID", flex: 1, editable: true },
     { field: "Name", headerName: "Name", minWidth: 150, editable: true },
-    { field: "Email", headerName: "Email", flex: 1, editable: true },
+    { field: "Email", headerName: "Email", minWidth: 200, editable: true },
     { field: "Phone", headerName: "Phone", minWidth: 150, editable: true },
-    { field: "JobTitle", headerName: "Job Title", flex: 1, editable: true },
+    { field: "JobTitle", headerName: "Job Title", minWidth: 100, editable: true },
     { field: "Organization", headerName: "Organization", flex: 1, editable: true },
-    { field: "State", headerName: "State", flex: 1, editable: true },
+    { field: "State", headerName: "State", minWidth: 50, editable: true },
     ...(isAdmin && users.length > 0
       ? [{
           field: 'user_id',

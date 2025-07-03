@@ -76,7 +76,7 @@ const AccountantSection = () => {
     try {
       const { data: leads, error: leadsError } = await supabase
         .from('mock')
-        .select('id, Name, Phone, Email, status, timestamp')
+        .select('id, Name, Phone, next_course, status, timestamp')
         .eq('status', 'KB Requested')
         .order('timestamp', { ascending: false });
 
@@ -309,27 +309,21 @@ const columns = [
       </Box>
     )
   },
-  { 
-    field: "Email", 
-    headerName: "Email", 
+  {
+    field: "next_course",
+    headerName: "Requested Courses",
     flex: 1,
     minWidth: 180,
     headerAlign: 'center',
     align: 'center',
-    renderCell: (params) => (
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', width: '100%' }}>
-        <Typography 
-          variant="body2" 
-          sx={{ 
-            color: brandColors.textSecondary,
-            fontSize: '0.9rem',
-            textAlign: 'center'
-          }}
-        >
-          {params.value}
+    renderCell: (params) => {
+      const value = Array.isArray(params.value) ? params.value : [];
+      return (
+        <Typography variant="body2" sx={{ color: brandColors.textSecondary, textAlign: 'center', width: '100%' }}>
+          {value.length > 0 ? value.join(', ') : <span style={{ fontStyle: 'italic' }}>None</span>}
         </Typography>
-      </Box>
-    )
+      );
+    }
   },
   { 
     field: "timestamp", 

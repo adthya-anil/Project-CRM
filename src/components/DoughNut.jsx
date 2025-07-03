@@ -3,7 +3,7 @@ import { supabase } from '../../supabaseClient';
 import { ResponsivePie } from '@nivo/pie';
 
 const DoughNut = ({isDashboard = false}) => {
-  const [selectedColumn, setSelectedColumn] = useState('JobTitle'); // default
+  const [selectedColumn, setSelectedColumn] = useState('status'); // default
   const [chartData, setChartData] = useState([]);
 
   useEffect(() => {
@@ -35,7 +35,6 @@ const DoughNut = ({isDashboard = false}) => {
     <div className={containerClass}>
       <div style={{marginLeft:8,marginTop:0}}>
          <select value={selectedColumn} onChange={e => setSelectedColumn(e.target.value)}>
-        <option value="JobTitle">Job Title</option>
         <option value="State">State</option>
         <option value="Country">Country</option>
         <option value="temperature">Temperature</option>

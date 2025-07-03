@@ -133,7 +133,7 @@ const HorizontalBarChart = ({ isDashboard = false, isAdmin = true }) => {
 
   const [data, setData] = useState([]);
   const [selectedColumn, setSelectedColumn] = useState('converting_count');
-  const [selectedCourse, setSelectedCourse] = useState('idip');
+  const [selectedCourse, setSelectedCourse] = useState('other');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedUser, setSelectedUser] = useState('all');

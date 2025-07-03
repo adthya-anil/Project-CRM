@@ -9,18 +9,21 @@ import NotificationsOutlinedIcon from "@mui/icons-material/NotificationsOutlined
 import ExitToAppIcon from "@mui/icons-material/ExitToApp";
 import SearchIcon from "@mui/icons-material/Search";
 import NotificationPanel from "../components/NotificationPanel";
+import { useNavigate } from "react-router-dom";
 
 const TopBar = ({ isAdmin }) => {
   const queryClient = useQueryClient();
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const colorMode = useContext(ColorModeContext);
+  const navigate = useNavigate();
 
   const [showNotifications, setShowNotifications] = useState(false);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     queryClient.clear();
+    navigate("/", { replace: true });
   };
 
   return (
