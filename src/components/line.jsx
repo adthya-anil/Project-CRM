@@ -6,6 +6,13 @@ const monthNames = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December'
 ];
+const getQuarterFromMonth = (month) => {
+  if (month >= 1 && month <= 4) return 1;
+  if (month >= 5 && month <= 8 ) return 2;
+  if (month >= 9 && month <= 12) return 3;
+  
+  return 1;
+};
 
 const LineChart = ({ isDashboard = false, isAdmin = true }) => {
   const [chartData, setChartData] = useState([]);
@@ -14,7 +21,13 @@ const LineChart = ({ isDashboard = false, isAdmin = true }) => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedUser, setSelectedUser] = useState('all');
   const [users, setUsers] = useState([]);
-  const [selectedQuarter, setSelectedQuarter] = useState(1);
+  const [selectedQuarter, setSelectedQuarter] = useState(
+    getQuarterFromMonth(new Date().getMonth() + 1)
+  );
+
+  useEffect(() => {
+    setSelectedQuarter(getQuarterFromMonth(selectedMonth));
+  }, [selectedMonth]);
 
   const courseOptions = [
     { value: 'idip', label: 'IDIP Leads', table: 'idip_leads_status' },

@@ -131,16 +131,30 @@ const HorizontalBarChart = ({ isDashboard = false, isAdmin = true }) => {
     }
   };
 
+  const getQuarterFromMonth = (month) => {
+  if (month >= 1 && month <= 4) return 1;
+  if (month >= 5 && month <= 8 ) return 2;
+  if (month >= 9 && month <= 12) return 3;
+  
+  return 1;
+};
+
   const [data, setData] = useState([]);
   const [selectedColumn, setSelectedColumn] = useState('converting_count');
-  const [selectedCourse, setSelectedCourse] = useState('other');
+  const [selectedCourse, setSelectedCourse] = useState('igc');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedUser, setSelectedUser] = useState('all');
-  const [selectedQuarter, setSelectedQuarter] = useState(1);
+   const [selectedQuarter, setSelectedQuarter] = useState(
+    getQuarterFromMonth(new Date().getMonth() + 1)
+  );
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  useEffect(() => {
+    setSelectedQuarter(getQuarterFromMonth(selectedMonth));
+  }, [selectedMonth]);
 
   const courseOptions = [
     { value: 'idip', label: 'IDIP Leads', table: 'idip_leads_status' },
