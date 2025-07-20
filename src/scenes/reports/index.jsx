@@ -14,8 +14,13 @@ import {
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import { Search, TrendingUp, Assignment, Person, School } from '@mui/icons-material';
+import LeadInteractions from '../../components/LeadInteraction';
 
-const Reports = () => {
+const Reports = ({isAdmin}) => {
+
+  if(!isAdmin){
+    return <LeadInteractions />
+  }
   const [kbData, setKbData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

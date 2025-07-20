@@ -194,7 +194,7 @@ const LineChart = ({ isDashboard = false, isAdmin = true }) => {
 
   const theme = isDashboard ? dashboardTheme : fullTheme;
   const margin = isDashboard 
-    ? { top: 10, right: 60, bottom: 635, left: 50 }
+    ? { top: 10, right: 20, bottom: 580, left: 50 }
     : { top: 50, right: 110, bottom: 130, left: 60 };
 
   const containerClass = isDashboard ? 'performance-chart-container dashboard' : 'performance-chart-container';
@@ -281,6 +281,7 @@ const LineChart = ({ isDashboard = false, isAdmin = true }) => {
           enableArea={true}
           areaBlendMode="multiply"
           enableTouchCrosshair={true}
+          animate={false}
           useMesh={true}
           legends={isDashboard ? [] : [
             {
