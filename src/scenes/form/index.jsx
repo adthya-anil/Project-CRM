@@ -264,23 +264,36 @@ const detectHeaderByKeywords = (header) => {
           cleanedRow[column] = validTemperatures.includes(value) ? value : 'Cold';
           break;
           
-        case 'coursesAttended':
-        case 'referrals':
-          if (value === undefined || value === null || value === '' || value === 'null') {
-            cleanedRow[column] = [];
-          } else if (Array.isArray(value)) {
-            cleanedRow[column] = value;
-          } else if (typeof value === 'string') {
-            try {
-              const parsed = JSON.parse(value);
-              cleanedRow[column] = Array.isArray(parsed) ? parsed : [];
-            } catch (error) {
-              cleanedRow[column] = value.split(',').map(item => item.trim()).filter(item => item);
-            }
-          } else {
-            cleanedRow[column] = [];
-          }
-          break;
+        // In your validateAndCleanData function, replace the coursesAttended and referrals case with this:
+
+case 'coursesAttended':
+case 'referrals':
+  if (value === undefined || value === null || value === '' || value === 'null') {
+    cleanedRow[column] = []; // Empty array for Supabase
+  } else if (Array.isArray(value)) {
+    // If it's already an array, ensure all elements are strings
+    cleanedRow[column] = value.map(item => String(item).trim()).filter(item => item !== '');
+  } else if (typeof value === 'string') {
+    try {
+      // Try to parse as JSON first
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) {
+        cleanedRow[column] = parsed.map(item => String(item).trim()).filter(item => item !== '');
+      } else {
+        // If JSON parsing gives non-array, treat as comma-separated
+        cleanedRow[column] = [String(parsed).trim()].filter(item => item !== '');
+      }
+    } catch (error) {
+      // If JSON parsing fails, split by comma
+      const items = value.split(',').map(item => item.trim()).filter(item => item !== '');
+      cleanedRow[column] = items.length > 0 ? items : [];
+    }
+  } else {
+    // For any other type, convert to string and wrap in array
+    const stringValue = String(value).trim();
+    cleanedRow[column] = stringValue !== '' ? [stringValue] : [];
+  }
+  break;
           
         case 'timestamp':
           const utcDate = convertISTToUTC(value);
