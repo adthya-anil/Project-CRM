@@ -211,121 +211,123 @@ const detectHeaderByKeywords = (header) => {
     return phoneStr;
   };
 
-  const validateAndCleanData = (row) => {
-    const cleanedRow = {};
+// Complete validateAndCleanData function with fixes for array fields
+const validateAndCleanData = (row) => {
+  const cleanedRow = {};
+  
+  expectedColumns.forEach(column => {
+    const value = row[column];
     
-    expectedColumns.forEach(column => {
-      const value = row[column];
-      
-      switch (column) {
-        case 'Phone':
-          cleanedRow[column] = formatPhoneNumber(value);
-          break;
-          
-        case 'recency':
-        case 'frequency':
-        case 'monetary':
-          if (value === undefined || value === null || value === '' || value === 'null') {
+    switch (column) {
+      case 'Phone':
+        cleanedRow[column] = formatPhoneNumber(value);
+        break;
+        
+      case 'recency':
+      case 'frequency':
+      case 'monetary':
+        if (value === undefined || value === null || value === '' || value === 'null') {
+          cleanedRow[column] = null;
+        } else {
+          const numValue = Number(value);
+          if (isNaN(numValue)) {
             cleanedRow[column] = null;
+          } else if (numValue >= 6) {
+            cleanedRow[column] = 5;
           } else {
-            const numValue = Number(value);
-            if (isNaN(numValue)) {
-              cleanedRow[column] = null;
-            } else if (numValue >= 6) {
-              cleanedRow[column] = 5;
-            } else {
-              cleanedRow[column] = numValue;
-            }
+            cleanedRow[column] = numValue;
           }
-          break;
-          
-        case 'score':
-          if (value === undefined || value === null || value === '' || value === 'null') {
+        }
+        break;
+        
+      case 'score':
+        if (value === undefined || value === null || value === '' || value === 'null') {
+          cleanedRow[column] = null;
+        } else {
+          const numValue = Number(value);
+          if (isNaN(numValue)) {
             cleanedRow[column] = null;
+          } else if (numValue >= 126) {
+            cleanedRow[column] = 125;
           } else {
-            const numValue = Number(value);
-            if (isNaN(numValue)) {
-              cleanedRow[column] = null;
-            } else if (numValue >= 126) {
-              cleanedRow[column] = 125;
-            } else {
-              cleanedRow[column] = numValue;
-            }
+            cleanedRow[column] = numValue;
           }
-          break;
-          
-        case 'status':
-          const validStatuses = ['Converted', 'Converting', 'Idle'];
-          cleanedRow[column] = validStatuses.includes(value) ? value : 'Idle';
-          break;
-          
-        case 'temperature':
-          const validTemperatures = ['Hot', 'Warm', 'Cold'];
-          cleanedRow[column] = validTemperatures.includes(value) ? value : 'Cold';
-          break;
-          
-        // In your validateAndCleanData function, replace the coursesAttended and referrals case with this:
-
-case 'coursesAttended':
-case 'referrals':
-  if (value === undefined || value === null || value === '' || value === 'null') {
-    cleanedRow[column] = []; // Empty array for Supabase
-  } else if (Array.isArray(value)) {
-    // If it's already an array, ensure all elements are strings
-    cleanedRow[column] = value.map(item => String(item).trim()).filter(item => item !== '');
-  } else if (typeof value === 'string') {
-    try {
-      // Try to parse as JSON first
-      const parsed = JSON.parse(value);
-      if (Array.isArray(parsed)) {
-        cleanedRow[column] = parsed.map(item => String(item).trim()).filter(item => item !== '');
-      } else {
-        // If JSON parsing gives non-array, treat as comma-separated
-        cleanedRow[column] = [String(parsed).trim()].filter(item => item !== '');
-      }
-    } catch (error) {
-      // If JSON parsing fails, split by comma
-      const items = value.split(',').map(item => item.trim()).filter(item => item !== '');
-      cleanedRow[column] = items.length > 0 ? items : [];
+        }
+        break;
+        
+      case 'status':
+        const validStatuses = ['Converted', 'Converting', 'Idle'];
+        cleanedRow[column] = validStatuses.includes(value) ? value : 'Idle';
+        break;
+        
+      case 'temperature':
+        const validTemperatures = ['Hot', 'Warm', 'Cold'];
+        cleanedRow[column] = validTemperatures.includes(value) ? value : 'Cold';
+        break;
+        
+      case 'coursesAttended':
+      case 'referrals':
+        if (value === undefined || value === null || value === '' || value === 'null') {
+          cleanedRow[column] = []; // Empty array for Supabase
+        } else if (Array.isArray(value)) {
+          // If it's already an array, ensure all elements are strings
+          cleanedRow[column] = value.map(item => String(item).trim()).filter(item => item !== '');
+        } else if (typeof value === 'string') {
+          try {
+            // Try to parse as JSON first
+            const parsed = JSON.parse(value);
+            if (Array.isArray(parsed)) {
+              cleanedRow[column] = parsed.map(item => String(item).trim()).filter(item => item !== '');
+            } else {
+              // If JSON parsing gives non-array, treat as comma-separated
+              cleanedRow[column] = [String(parsed).trim()].filter(item => item !== '');
+            }
+          } catch (error) {
+            // If JSON parsing fails, split by comma
+            const items = value.split(',').map(item => item.trim()).filter(item => item !== '');
+            cleanedRow[column] = items.length > 0 ? items : [];
+          }
+        } else {
+          // For any other type, convert to string and wrap in array
+          const stringValue = String(value).trim();
+          cleanedRow[column] = stringValue !== '' ? [stringValue] : [];
+        }
+        break;
+        
+      case 'timestamp':
+        const utcDate = convertISTToUTC(value);
+        if (utcDate) {
+          cleanedRow[column] = utcDate.toISOString().slice(0, -1);
+        } else {
+          cleanedRow[column] = new Date().toISOString().slice(0, -1);
+        }
+        break;
+        
+      case 'created_at':
+      case 'status_updated_at':
+        const utcDateWithZ = convertISTToUTC(value);
+        if (utcDateWithZ) {
+          cleanedRow[column] = utcDateWithZ.toISOString();
+        } else {
+          cleanedRow[column] = new Date().toISOString();
+        }
+        break;
+        
+      default:
+        // CRITICAL FIX: Handle array fields in default case to prevent "malformed array literal" error
+        if (column === 'coursesAttended' || column === 'referrals') {
+          cleanedRow[column] = [];
+        } else if (value === undefined || value === null || value === '') {
+          cleanedRow[column] = null; // Use actual null, not string 'null'
+        } else {
+          cleanedRow[column] = String(value).trim();
+        }
+        break;
     }
-  } else {
-    // For any other type, convert to string and wrap in array
-    const stringValue = String(value).trim();
-    cleanedRow[column] = stringValue !== '' ? [stringValue] : [];
-  }
-  break;
-          
-        case 'timestamp':
-          const utcDate = convertISTToUTC(value);
-          if (utcDate) {
-            cleanedRow[column] = utcDate.toISOString().slice(0, -1);
-          } else {
-            cleanedRow[column] = new Date().toISOString().slice(0, -1);
-          }
-          break;
-          
-        case 'created_at':
-        case 'status_updated_at':
-          const utcDateWithZ = convertISTToUTC(value);
-          if (utcDateWithZ) {
-            cleanedRow[column] = utcDateWithZ.toISOString();
-          } else {
-            cleanedRow[column] = new Date().toISOString();
-          }
-          break;
-          
-        default:
-          if (value === undefined || value === null || value === '') {
-            cleanedRow[column] = 'null';
-          } else {
-            cleanedRow[column] = String(value).trim();
-          }
-          break;
-      }
-    });
-    
-    return cleanedRow;
-  };
+  });
+  
+  return cleanedRow;
+};
 
   const checkExistingRecords = async (data) => {
     try {
