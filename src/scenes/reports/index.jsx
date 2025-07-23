@@ -16,7 +16,7 @@ import { DataGrid } from '@mui/x-data-grid';
 import { Search, TrendingUp, Assignment, Person, School } from '@mui/icons-material';
 import LeadInteractions from '../../components/LeadInteraction';
 
-const Reports = ({isAdmin}) => {
+const Reports = ({isAdmin, onlyTable}) => {
 
   if(!isAdmin){
     return <LeadInteractions />
@@ -238,6 +238,20 @@ const Reports = ({isAdmin}) => {
         <Alert severity="error">
           Error loading data: {error}
         </Alert>
+      </Box>
+    );
+  }
+
+  if (onlyTable) {
+    return (
+      <Box sx={{ height: 600, width: '100%' }}>
+        <DataGrid
+          rows={kbData}
+          columns={columns}
+          pageSize={10}
+          rowsPerPageOptions={[5, 10, 25, 50]}
+          disableSelectionOnClick
+        />
       </Box>
     );
   }
