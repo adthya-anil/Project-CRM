@@ -370,7 +370,7 @@ const handleAssignUser = async (rowId, newUserId) => {
     { field: "Phone", headerName: "Phone", minWidth: 150, editable: true },
     { field: "JobTitle", headerName: "Job Title", minWidth: 100, editable: true },
     { field: "Organization", headerName: "Organization", flex: 1, editable: true },
-    { field: "State", headerName: "State", minWidth: 50, editable: true },
+    { field: "Country", headerName: "Country", minWidth: 100, editable: true },
     ...(isAdmin && users.length > 0
       ? [{
   field: 'user_id',
@@ -430,8 +430,8 @@ const handleAssignUser = async (rowId, newUserId) => {
   ],
 }]
       : [{
-          field: "Country",
-          headerName: "Country",
+          field: "State",
+          headerName: "State",
           flex: 1,
           editable: true
         }]
