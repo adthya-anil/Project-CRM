@@ -78,9 +78,10 @@ const AccountantSection = () => {
   const fetchKBRequestLeads = async () => {
     setIsLoading(true);
     try {
+      // Fetch leads with user info (course advisor)
       const { data: leads, error: leadsError } = await supabase
         .from('mock')
-        .select('id, Name, Phone, next_course, status, timestamp')
+        .select(`id, Name, Phone, next_course, status, timestamp, user_id, users!mock_user_id_fkey(name, role)`)
         .eq('status', 'KB Requested')
         .order('timestamp', { ascending: false });
 
@@ -105,7 +106,9 @@ const AccountantSection = () => {
       const enrichedLeads = (leads || []).map(lead => ({
         ...lead,
         kbHistory: kbData.filter(kb => kb.lead_id === lead.id),
-        lastKbNumber: kbData.find(kb => kb.lead_id === lead.id)?.kb_number || null
+        lastKbNumber: kbData.find(kb => kb.lead_id === lead.id)?.kb_number || null,
+        courseAdvisor: lead.users?.name || 'Unassigned',
+        advisorRole: lead.users?.role || ''
       }));
 
       setKbRequestLeads(enrichedLeads);
@@ -391,6 +394,25 @@ const columns = [
             }}
           >
             None
+          </Typography>
+        )}
+      </Box>
+    )
+  },
+  {
+    field: "courseAdvisor",
+    headerName: "Course Advisor",
+    width: 180,
+    headerAlign: 'center',
+    align: 'center',
+    renderCell: (params) => (
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+        <Typography variant="body2" fontWeight={500}>
+          {params.value}
+        </Typography>
+        {params.row.advisorRole && (
+          <Typography variant="caption" color="text.secondary">
+            {params.row.advisorRole}
           </Typography>
         )}
       </Box>
