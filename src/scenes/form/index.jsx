@@ -211,8 +211,7 @@ const detectHeaderByKeywords = (header) => {
     return phoneStr;
   };
 
-// Complete validateAndCleanData function with fixes for array fields
-const validateAndCleanData = (row) => {
+  const validateAndCleanData = (row) => {
   const cleanedRow = {};
   
   expectedColumns.forEach(column => {
