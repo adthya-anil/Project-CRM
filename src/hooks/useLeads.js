@@ -3,20 +3,27 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getTable, createTable, updateTabled, deleteLead } from "../api/crud.js";
 import { useState } from 'react';
 
-
-
-export const useLeads = (TABLE_NAME,SELECT_FIELDS) => {
+export const useLeads = (TABLE_NAME, SELECT_FIELDS, fetchOptions = {}) => {
   
   const queryClient = useQueryClient();
   const [leads, setLeads] = useState([]);
   
+  // Default fetch options with increased limit
+  const defaultFetchOptions = {
+    limit: 2000, // UPDATED: Increased from default to 2000
+    orderBy: 'timestamp',
+    orderDirection: 'desc',
+    ...fetchOptions // Allow override of default options
+  };
+  
   // Query for fetching leads
   const leadsQuery = useQuery({
-    queryKey: [TABLE_NAME],
+    queryKey: [TABLE_NAME, defaultFetchOptions], // Include fetch options in query key for proper caching
     queryFn: () => getTable({
       table: TABLE_NAME,
       selectFields: SELECT_FIELDS,
-      filters: [] // Add any default filters here if needed
+      filters: [], // Add any default filters here if needed
+      ...defaultFetchOptions // UPDATED: Pass the fetch options to getTable
     }),
     staleTime: 5 * 60 * 1000, // 5 minutes
     cacheTime: 10 * 60 * 1000, // 10 minutes
@@ -34,7 +41,7 @@ export const useLeads = (TABLE_NAME,SELECT_FIELDS) => {
     },
     onSuccess: (newLead) => {
       // Optimistically update the cache
-      queryClient.setQueryData([TABLE_NAME], (oldData) => {
+      queryClient.setQueryData([TABLE_NAME, defaultFetchOptions], (oldData) => {
         return [newLead, ...(oldData || [])];
       });
       // Also invalidate to ensure sync with server
@@ -62,10 +69,10 @@ export const useLeads = (TABLE_NAME,SELECT_FIELDS) => {
       await queryClient.cancelQueries([TABLE_NAME]);
       
       // Snapshot the previous value
-      const previousLeads = queryClient.getQueryData([TABLE_NAME]);
+      const previousLeads = queryClient.getQueryData([TABLE_NAME, defaultFetchOptions]);
       
       // Optimistically update to the new value
-      queryClient.setQueryData([TABLE_NAME], (oldData) => {
+      queryClient.setQueryData([TABLE_NAME, defaultFetchOptions], (oldData) => {
         return oldData?.map(lead => 
           lead.id === updatedLead.id ? { ...lead, ...updatedLead } : lead
         ) || [];
@@ -75,7 +82,7 @@ export const useLeads = (TABLE_NAME,SELECT_FIELDS) => {
     },
     onError: (err, updatedLead, context) => {
       // Rollback on error
-      queryClient.setQueryData([TABLE_NAME], context.previousLeads);
+      queryClient.setQueryData([TABLE_NAME, defaultFetchOptions], context.previousLeads);
     },
     onSettled: () => {
       // Always refetch after error or success
@@ -89,10 +96,10 @@ export const useLeads = (TABLE_NAME,SELECT_FIELDS) => {
     onMutate: async (deletedId) => {
       await queryClient.cancelQueries([TABLE_NAME]);
       
-      const previousLeads = queryClient.getQueryData([TABLE_NAME]);
+      const previousLeads = queryClient.getQueryData([TABLE_NAME, defaultFetchOptions]);
       
       // Optimistically remove from cache
-      queryClient.setQueryData([TABLE_NAME], (oldData) => {
+      queryClient.setQueryData([TABLE_NAME, defaultFetchOptions], (oldData) => {
         return oldData?.filter(lead => lead.id !== deletedId) || [];
       });
       
@@ -100,7 +107,7 @@ export const useLeads = (TABLE_NAME,SELECT_FIELDS) => {
     },
     onError: (err, deletedId, context) => {
       // Rollback on error
-      queryClient.setQueryData([TABLE_NAME], context.previousLeads);
+      queryClient.setQueryData([TABLE_NAME, defaultFetchOptions], context.previousLeads);
     },
     onSettled: () => {
       queryClient.invalidateQueries([TABLE_NAME]);
@@ -148,5 +155,8 @@ export const useLeads = (TABLE_NAME,SELECT_FIELDS) => {
     updateError: updateLeadMutation.error,
     deleteError: deleteLeadMutation.error,
     bulkDeleteError: bulkDeleteMutation.error,
+
+    // UPDATED: Expose fetch options for debugging
+    fetchOptions: defaultFetchOptions,
   };
 };
