@@ -42,7 +42,7 @@ const Leads = ({isAdmin}) => {
   const styles = getLeadsStyles(theme);
   
   const TABLE_NAME = 'mock';
-  const SELECT_FIELDS = 'id, user_id, Name, Email, Phone, State, JobTitle, Country, timestamp, Organization, temperature, status, coursesAttended, referrals, Source, next_course, classification'
+  const SELECT_FIELDS = 'id, user_id, Name, Email, Phone, State, JobTitle, Country, timestamp, p_month, temperature, status, awareness, referrals, Source, next_course, classification'
   
   const {
     leads,
@@ -369,7 +369,7 @@ const handleAssignUser = async (rowId, newUserId) => {
     { field: "Email", headerName: "Email", minWidth: 200, editable: true },
     { field: "Phone", headerName: "Phone", minWidth: 150, editable: true },
     { field: "JobTitle", headerName: "Job Title", minWidth: 100, editable: true },
-    { field: "Organization", headerName: "Organization", flex: 1, editable: true },
+    { field: "p_month", headerName: "Provisional Month ", minWidth: 150, editable: true },
     { field: "Country", headerName: "Country", minWidth: 100, editable: true },
     ...(isAdmin && users.length > 0
       ? [{
@@ -455,38 +455,38 @@ const handleAssignUser = async (rowId, newUserId) => {
       renderCell: (params) => {
         return (<DropDown id={params.id} value={params.value} table={TABLE_NAME} option={['KB Requested','Converting','Idle']} column={'status'}/>)
       }
-    },
-    {
-      field: "coursesAttended",
-      headerName: "Courses Attended",
-      flex: 1,
-      editable: true,
-      renderCell: (params) => {
-        if (!params.value) return "";
-        return Array.isArray(params.value) ? params.value.join(", ") : params.value;
-      },
-      valueGetter: (value) => {
-        if (!value) return "";
-        return Array.isArray(value) ? value.join(", ") : value;
-      },
-      valueSetter: (value, row) => {
-        if (!value) {
-          return { ...row, coursesAttended: [] };
-        }
+    },{ field: "awareness", headerName: "Awareness", minWidth: 150, editable: true },
+    // {
+    //   field: "coursesAttended",
+    //   headerName: "Courses Attended",
+    //   flex: 1,
+    //   editable: true,
+    //   renderCell: (params) => {
+    //     if (!params.value) return "";
+    //     return Array.isArray(params.value) ? params.value.join(", ") : params.value;
+    //   },
+    //   valueGetter: (value) => {
+    //     if (!value) return "";
+    //     return Array.isArray(value) ? value.join(", ") : value;
+    //   },
+    //   valueSetter: (value, row) => {
+    //     if (!value) {
+    //       return { ...row, coursesAttended: [] };
+    //     }
         
-        const stringValue = typeof value === 'string' ? value : String(value);
+    //     const stringValue = typeof value === 'string' ? value : String(value);
         
-        const updatedArray = stringValue
-          .split(",")
-          .map((item) => item.trim())
-          .filter((item) => item !== "");
+    //     const updatedArray = stringValue
+    //       .split(",")
+    //       .map((item) => item.trim())
+    //       .filter((item) => item !== "");
 
-        return {
-          ...row,
-          coursesAttended: updatedArray,
-        };
-      }
-    },
+    //     return {
+    //       ...row,
+    //       coursesAttended: updatedArray,
+    //     };
+    //   }
+    // },
     { field: "next_course", headerName: "Next Course", minWidth: 200, editable: true,
       renderCell: (params) => {
         const courseOptions = [
