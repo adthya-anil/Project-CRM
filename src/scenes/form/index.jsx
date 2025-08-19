@@ -40,8 +40,8 @@ const CSVUploader = ({ tableName = 'mock' }) => {
 
   // Expected columns for CRM schema
   const expectedColumns = [
-    "Name", "JobTitle", "Phone", "Email", "State", "Country", "Organization", 
-    "temperature", "timestamp", "status", "coursesAttended", "referrals", 
+    "Name", "JobTitle", "Phone", "Email", "State", "Country", 
+    "temperature", "timestamp", "status","referrals", 
     "Source", "recency", "frequency", "monetary", "score", "classification", 
     "next_course", "created_at", "status_updated_at"
   ];
@@ -79,11 +79,7 @@ const detectHeaderByKeywords = (header) => {
   }
   
   // Organization detection
-  if (cleanHeader.includes('organization') || cleanHeader.includes('organisation') ||
-      cleanHeader.includes('company') || cleanHeader.includes('firm') ||
-      cleanHeader.includes('employer')) {
-    return 'Organization';
-  }
+ 
   
   // State detection
   if (cleanHeader.includes('state') || cleanHeader.includes('city') ||
@@ -264,7 +260,7 @@ const detectHeaderByKeywords = (header) => {
         cleanedRow[column] = validTemperatures.includes(value) ? value : 'Cold';
         break;
         
-      case 'coursesAttended':
+      
       case 'referrals':
         if (value === undefined || value === null || value === '' || value === 'null') {
           cleanedRow[column] = []; // Empty array for Supabase
@@ -314,7 +310,7 @@ const detectHeaderByKeywords = (header) => {
         
       default:
         // CRITICAL FIX: Handle array fields in default case to prevent "malformed array literal" error
-        if (column === 'coursesAttended' || column === 'referrals') {
+        if (column === 'referrals') {
           cleanedRow[column] = [];
         } else if (value === undefined || value === null || value === '') {
           cleanedRow[column] = null; // Use actual null, not string 'null'
@@ -738,7 +734,6 @@ const Form = () => {
     mode: 'onTouched'
   });
 
-  const [coursesAttended, setCoursesAttended] = useState([""]);
   const [referrals, setReferrals] = useState([""]);
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -756,12 +751,12 @@ const Form = () => {
       console.log('Supabase insert error:', error);
       let msg = "Error inserting row: " + error.message;
       if (error.message.toLowerCase().includes('unique') || error.message.toLowerCase().includes('duplicate')) {
-  if (error.message.toLowerCase().includes('email') && newLead.Email && newLead.Email.trim() !== '') {
-    msg = `Email "${newLead.Email}" already exists in database.`;
-  } else if (error.message.toLowerCase().includes('phone') && newLead.Phone && newLead.Phone.trim() !== '') {
-    msg = `Phone "${newLead.Phone}" already exists in database.`;
-  }
-}
+        if (error.message.toLowerCase().includes('email') && newLead.Email && newLead.Email.trim() !== '') {
+          msg = `Email "${newLead.Email}" already exists in database.`;
+        } else if (error.message.toLowerCase().includes('phone') && newLead.Phone && newLead.Phone.trim() !== '') {
+          msg = `Phone "${newLead.Phone}" already exists in database.`;
+        }
+      }
       setErrorMessage(msg);
       setSuccessMessage("");
       setTimeout(() => {
@@ -779,13 +774,11 @@ const Form = () => {
   }
 
   const onSubmit = async (data) => {
-    const filteredCourses = coursesAttended.filter(course => course.trim() !== "");
     const filteredReferrals = referrals.filter(referral => referral.trim() !== "");
     const finalData = {
       ...data,
       Email: data.Email?.trim() || null,
-  Phone: data.Phone?.trim() || null,
-      coursesAttended: filteredCourses,
+      Phone: data.Phone?.trim() || null,
       referrals: filteredReferrals,
       next_course: Array.isArray(data.next_course)
         ? data.next_course
@@ -809,23 +802,6 @@ const Form = () => {
       setFocus(firstErrorField);
       setErrorMessage(errors[firstErrorField].message || "Please fill all required fields.");
     }
-  };
-
-  const addCourseField = () => {
-    setCoursesAttended([...coursesAttended, ""]);
-  };
-
-  const removeCourseField = (index) => {
-    if (coursesAttended.length > 1) {
-      const newCourses = coursesAttended.filter((_, i) => i !== index);
-      setCoursesAttended(newCourses);
-    }
-  };
-
-  const updateCourseField = (index, value) => {
-    const newCourses = [...coursesAttended];
-    newCourses[index] = value;
-    setCoursesAttended(newCourses);
   };
 
   const addReferralField = () => {
@@ -1052,7 +1028,7 @@ const Form = () => {
 
             <Divider sx={{ my: 4, borderColor: 'rgba(49, 150, 198, 0.2)' }} />
 
-            {/* Location & Organization Section */}
+            {/* Location Section */}
             <Box sx={{ mb: 5 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                 <Box 
@@ -1072,7 +1048,7 @@ const Form = () => {
                     letterSpacing: '0.5px'
                   }}
                 >
-                  Location & Organization
+                  Location
                 </Typography>
               </Box>
               
@@ -1128,38 +1104,12 @@ const Form = () => {
                     }}
                   />
                 </Grid>
-
-                <Grid size={{xs: 12}}>
-                  <TextField
-                    fullWidth
-                    label="Organization"
-                    {...register("Organization")}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        backgroundColor: 'white',
-                        borderRadius: 2,
-                        '&:hover .MuiOutlinedInput-notchedOutline': {
-                          borderColor: '#3196c6',
-                        },
-                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                          borderColor: '#0a3456',
-                        }
-                      },
-                      '& .MuiInputLabel-root.Mui-focused': {
-                        color: '#0a3456',
-                      },
-                      'input': {
-                        color: '#0a3456',
-                      }
-                    }}
-                  />
-                </Grid>
               </Grid>
             </Box>
 
             <Divider sx={{ my: 4, borderColor: 'rgba(49, 150, 198, 0.2)' }} />
 
-            {/* Courses & Referrals Section */}
+            {/* Next Course & Referrals Section */}
             <Box sx={{ mb: 5 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                 <Box 
@@ -1184,83 +1134,6 @@ const Form = () => {
               </Box>
               
               <Grid container spacing={4}>
-                {/* Courses Attended */}
-                <Grid size={{xs: 12, md: 6}}>
-                  <Paper 
-                    elevation={2}
-                    sx={{ 
-                      p: 4, 
-                      borderRadius: 3,
-                      backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                      border: '1px solid rgba(49, 150, 198, 0.2)',
-                      transition: 'all 0.3s ease',
-                      '&:hover': {
-                        boxShadow: '0 8px 25px rgba(10, 52, 86, 0.15)',
-                        transform: 'translateY(-2px)'
-                      }
-                    }}
-                  >
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                      <Typography 
-                        variant="h6" 
-                        sx={{ 
-                          fontWeight: 600, 
-                          color: '#0a3456'
-                        }}
-                      >
-                        Courses Attended
-                      </Typography>
-                      <Button
-                        onClick={addCourseField}
-                        size="small"
-                        sx={{ 
-                          color: '#3196c6',
-                          '&:hover': { backgroundColor: 'rgba(49, 150, 198, 0.1)' }
-                        }}
-                      >
-                        <Plus size={16} style={{ marginRight: '4px' }} />
-                        Add
-                      </Button>
-                    </Box>
-                    
-                    {coursesAttended.map((course, index) => (
-                      <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                        <TextField
-                          fullWidth
-                          label={`Course ${index + 1}`}
-                          value={course}
-                          onChange={(e) => updateCourseField(index, e.target.value)}
-                          sx={{
-                            '& .MuiOutlinedInput-root': {
-                              backgroundColor: 'white',
-                              borderRadius: 2,
-                              '&:hover .MuiOutlinedInput-notchedOutline': {
-                                borderColor: '#3196c6',
-                              },
-                              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                borderColor: '#0a3456',
-                              }
-                            },
-                            '& .MuiInputLabel-root.Mui-focused': {
-                              color: '#0a3456',
-                            },
-                      'input': {
-                        color: '#0a3456',
-                      }
-                          }}
-                        />
-                        {coursesAttended.length > 1 && (
-                          <IconButton
-                            onClick={() => removeCourseField(index)}
-                            sx={{ ml: 1, color: '#ef4444' }}
-                          >
-                            <Trash2 size={16} />
-                          </IconButton>
-                        )}
-                      </Box>
-                    ))}
-                  </Paper>
-                </Grid>
                 <Grid size={{xs: 12, md: 6}}>
                   <Paper
                     elevation={2}
@@ -1309,7 +1182,6 @@ const Form = () => {
                     </FormGroup>
                   </Paper>
                 </Grid>
-
 
                 {/* Referrals */}
                 <Grid size={{xs: 12, md: 6}}>
@@ -1371,9 +1243,9 @@ const Form = () => {
                             '& .MuiInputLabel-root.Mui-focused': {
                               color: '#0a3456',
                             },
-                      'input': {
-                        color: '#0a3456',
-                      }
+                            'input': {
+                              color: '#0a3456',
+                            }
                           }}
                         />
                         {referrals.length > 1 && (
@@ -1503,9 +1375,9 @@ const Form = () => {
                             sx={{ 
                               fontWeight: 500,
                               '&.Mui-focused': { color: '#0a3456' },
-                      'input': {
-                        color: '#0a3456',
-                      }
+                              'input': {
+                                color: '#0a3456',
+                              }
                             }}
                           >
                             Status
@@ -1525,9 +1397,9 @@ const Form = () => {
                               '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                                 borderColor: '#0a3456',
                               },
-                       "& .MuiSelect-select": {
-                                  color: "#0a3456", //  changes selected value text color
-                                },
+                              "& .MuiSelect-select": {
+                                color: "#0a3456", //  changes selected value text color
+                              },
                             }}
                           >
                             <MenuItem value="KB Requested">KB Requested</MenuItem>
