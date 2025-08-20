@@ -371,71 +371,86 @@ const handleAssignUser = async (rowId, newUserId) => {
     { field: "JobTitle", headerName: "Job Title", minWidth: 100, editable: true },
     { field: "p_month", headerName: "Prospective Month ", minWidth: 150, editable: true },
     { field: "Country", headerName: "Country", minWidth: 100, editable: true },
-    ...(isAdmin && users.length > 0
-      ? [{
-  field: 'user_id',
-  headerName: 'Course Advisor',
-  flex: 1,
-  filterable: true,
-  sortable: true,
-  minWidth: 200,
-  renderCell: (params) => (
-    <AssignUserCell
-      value={params.value}
-      row={params.row}
-      users={users}
-      onAssign={handleAssignUser}
-    />
-  ),
-  // Add custom filter value getter to show both name and UUID
-  filterValueGetter: (value, row) => {
-    if (!value) return 'Unassigned';
-    const user = users.find(u => u.user_id === value);
-    return user ? `${user.name} (${value})` : value;
-  },
-  // Custom header with tooltip
-  renderHeader: (params) => (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-      <span>Course Advisor</span>
-      <Tooltip 
-        title={
-          <Box>
-            <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1 }}>
-              Filter by UUID values:
-            </Typography>
-            {users.map(user => (
-              <Typography key={user.user_id} variant="body2" sx={{ mb: 0.5 }}>
-                {user.name}: {user.user_id}
-              </Typography>
-            ))}
-            <Typography variant="body2" sx={{ mt: 1, fontStyle: 'italic' }}>
-              Use "Unassigned" to filter unassigned leads
-            </Typography>
-          </Box>
-        }
-        placement="top"
-        arrow
-      >
-        <InfoIcon sx={{ fontSize: 16, color: 'text.secondary', cursor: 'help' }} />
-      </Tooltip>
-    </Box>
-  ),
-  // Add value options for better filtering experience
-  valueOptions: [
-    { value: null, label: 'Unassigned' },
-    ...users.map(user => ({
-      value: user.user_id,
-      label: `${user.name} (${user.user_id})`
-    }))
-  ],
-}]
-      : [{
-          field: "State",
-          headerName: "State",
-          flex: 1,
-          editable: true
-        }]
-    ),
+   ...(isAdmin && users.length > 0
+  ? [{
+      field: 'user_id',
+      headerName: 'Course Advisor',
+      flex: 1,
+      filterable: true,
+      sortable: true,
+      minWidth: 200,
+      renderCell: (params) => (
+        <AssignUserCell
+          value={params.value}
+          row={params.row}
+          users={users}
+          onAssign={handleAssignUser}
+        />
+      ),
+      // Add custom filter value getter to show both name and UUID
+      filterValueGetter: (value, row) => {
+        if (!value) return 'Unassigned';
+        const user = users.find(u => u.user_id === value);
+        return user ? `${user.name} (${value})` : value;
+      },
+      // Custom header with tooltip
+      renderHeader: (params) => (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <span>Course Advisor</span>
+          <Tooltip
+            title={
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1 }}>
+                  Filter by UUID values:
+                </Typography>
+                {users.map(user => (
+                  <Typography key={user.user_id} variant="body2" sx={{ mb: 0.5 }}>
+                    {user.name}: {user.user_id}
+                  </Typography>
+                ))}
+                <Typography variant="body2" sx={{ mt: 1, fontStyle: 'italic' }}>
+                  Use "Unassigned" to filter unassigned leads
+                </Typography>
+              </Box>
+            }
+            placement="bottom-start"
+            arrow
+            PopperProps={{
+              modifiers: [
+                {
+                  name: 'flip',
+                  enabled: false, // Disable flipping to prevent tooltip from going above
+                },
+                {
+                  name: 'preventOverflow',
+                  options: {
+                    altBoundary: true,
+                    tether: false,
+                  },
+                },
+              ],
+            }}
+          >
+            <InfoIcon sx={{ fontSize: 16, color: 'text.secondary', cursor: 'help' }} />
+          </Tooltip>
+        </Box>
+      ),
+      // Add value options for better filtering experience
+      valueOptions: [
+        { value: null, label: 'Unassigned' },
+        ...users.map(user => ({
+          value: user.user_id,
+          label: `${user.name} (${user.user_id})`
+        }))
+      ],
+    }]
+  : [{
+      field: "State",
+      headerName: "State",
+      flex: 1,
+      editable: true
+    }]
+),
     { 
       field: 'temperature', 
       headerName: 'Lead Temperature', 
