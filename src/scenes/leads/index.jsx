@@ -369,7 +369,7 @@ const handleAssignUser = async (rowId, newUserId) => {
     { field: "Email", headerName: "Email", minWidth: 200, editable: true },
     { field: "Phone", headerName: "Phone", minWidth: 150, editable: true },
     { field: "JobTitle", headerName: "Job Title", minWidth: 100, editable: true },
-    { field: "p_month", headerName: "Provisional Month ", minWidth: 150, editable: true },
+    { field: "p_month", headerName: "Prospective Month ", minWidth: 150, editable: true },
     { field: "Country", headerName: "Country", minWidth: 100, editable: true },
     ...(isAdmin && users.length > 0
       ? [{
@@ -455,7 +455,7 @@ const handleAssignUser = async (rowId, newUserId) => {
       renderCell: (params) => {
         return (<DropDown id={params.id} value={params.value} table={TABLE_NAME} option={['KB Requested','Converting','Idle']} column={'status'}/>)
       }
-    },{ field: "awareness", headerName: "Awareness", minWidth: 150, editable: true },
+    },{ field: "awareness", headerName: "Template Given", minWidth: 150, editable: true },
     // {
     //   field: "coursesAttended",
     //   headerName: "Courses Attended",
