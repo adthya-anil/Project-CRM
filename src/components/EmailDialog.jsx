@@ -21,8 +21,8 @@ const EmailDialog = ({ open, onClose, selectedRecipients = [] }) => {
   const [attachments, setAttachments] = useState([]);
   const [uploadingFiles, setUploadingFiles] = useState(false);
 
-  // Replace with your actual Mailgun template names
-  const availableTemplates = ['idip template - july batch', 'igc', 'welcome'];
+  // Mailgun template names
+  const availableTemplates = ['idip template - july batch', 'igc', 'welcome', 'follow up - idip', 'follow up - igc'];
 
   useEffect(() => {
     if (open) {
