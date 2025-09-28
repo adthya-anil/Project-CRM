@@ -80,8 +80,8 @@ return (
                 alignItems="center"
               >
                 <Typography className="logo-text">
-                  <span className="logo-safety">Safety</span>
-                  <span className="logo-catch">Catch</span>
+                  <span className="logo-safety">CRM</span>
+                  
                 </Typography>
                 <IconButton 
                   onClick={() => setCollapsed(!collapsed)}

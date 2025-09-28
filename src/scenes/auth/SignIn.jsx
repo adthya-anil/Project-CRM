@@ -36,37 +36,37 @@ function SignIn({isAccountant}) {
         <div className="features-content">
           <div className="feature-item">
             <div className="feature-title">
-              🎯 Proven expertise
+              Built with React.js frontend and Supabase backend for scalability.
             </div>
             <div className="feature-description">
-              Trusted by 250+ corporate clients across India, Saudi Arabia, Qatar, and Bangladesh for comprehensive safety solutions.
+              Features notes and reminders to keep track of client interactions.
             </div>
           </div>
 
           <div className="feature-item">
             <div className="feature-title">
-              🏆 International standards
+              Role-Based Access
             </div>
             <div className="feature-description"> 
-              NEBOSH, OSHA, IOSH certified training programs that meet global workplace safety requirements.
+              Includes role-based dashboards for different types of users.
             </div>
           </div>
 
           <div className="feature-item">
             <div className="feature-title">
-              🎓 15+ years of excellence
+              Offers interactive charts and graphs for visualizing lead data.
             </div>
             <div className="feature-description"> 
-              Established reputation since 2010 in delivering world-class safety education and professional development.
+             Visualizing and providing proper analysis using nivo charts
             </div>
           </div>
 
           <div className="feature-item">
             <div className="feature-title">
-              🛡️ Complete safety ecosystem 
+              CRUD Operations with Extra Features
             </div>
             <div className="feature-description">
-              From training and consultancy to audit services and recruitment - your one-stop safety partner. 
+              Provides lead management with filtering, sorting, and reminders.
             </div>
           </div>
         </div>
@@ -86,8 +86,8 @@ function SignIn({isAccountant}) {
             
             {/* Brand Name */}
             <h1 className="brand-title">
-              <span className="brand-safety">Safety</span>
-              <span className="brand-catch">Catch</span>
+              <span className="brand-safety">CRM</span>
+              {/* <span className="brand-catch">Catch</span> */}
             </h1>
             
             {/* Subtitle */}
